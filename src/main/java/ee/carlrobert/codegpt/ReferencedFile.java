@@ -1,5 +1,8 @@
 package ee.carlrobert.codegpt;
 
+import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.vfs.VfsUtilCore;
+import com.intellij.openapi.vfs.VirtualFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,38 +11,47 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ReferencedFile {
+public record ReferencedFile(String fileName, String filePath, String fileContent) {
 
-  private final String fileName;
-  private final String filePath;
-  private final String fileContent;
+  public static ReferencedFile from(File file) {
+    return new ReferencedFile(
+        file.getName(),
+        file.getPath(),
+        readContent(file)
+    );
+  }
 
-  public ReferencedFile(File file) {
-    this.fileName = file.getName();
-    this.filePath = file.getPath();
+  public static ReferencedFile from(VirtualFile virtualFile) {
+    return new ReferencedFile(
+        virtualFile.getName(),
+        virtualFile.getPath(),
+        getVirtualFileContent(virtualFile)
+    );
+  }
+
+  private static String getVirtualFileContent(VirtualFile virtualFile) {
+    var documentManager = FileDocumentManager.getInstance();
+    var document = documentManager.getDocument(virtualFile);
+    if (document != null && documentManager.isDocumentUnsaved(document)) {
+      return document.getText();
+    }
+    return readContent(virtualFile);
+  }
+
+  private static String readContent(File file) {
     try {
-      this.fileContent = new String(Files.readAllBytes(Paths.get(filePath)));
+      return new String(Files.readAllBytes(Paths.get(file.getPath())));
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to read file content", e);
     }
   }
 
-  public ReferencedFile(String fileName, String filePath, String fileContent) {
-    this.fileName = fileName;
-    this.filePath = filePath;
-    this.fileContent = fileContent;
-  }
-
-  public String getFileName() {
-    return fileName;
-  }
-
-  public String getFilePath() {
-    return filePath;
-  }
-
-  public String getFileContent() {
-    return fileContent;
+  private static String readContent(VirtualFile virtualFile) {
+    try {
+      return VfsUtilCore.loadText(virtualFile);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to read virtual file content", e);
+    }
   }
 
   public String getFileExtension() {

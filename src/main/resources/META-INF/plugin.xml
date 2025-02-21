@@ -1,9 +1,10 @@
 <idea-plugin>
     <id>ee.carlrobert.chatgpt</id>
-    <name>CodeGPT</name>
+    <name>Proxy AI</name>
     <vendor email="carlrobertoh@gmail.com" url="https://carlrobert.ee">Carl-Robert Linnupuu</vendor>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.lang</depends>
+    <depends optional="true" config-file="plugin-kotlin.xml">org.jetbrains.kotlin</depends>
     <depends optional="true" config-file="plugin-java.xml">com.intellij.modules.java</depends>
     <depends optional="true" config-file="plugin-python.xml">com.intellij.modules.python</depends>
 <!--    TODO-->
@@ -16,7 +17,9 @@
 
     <projectListeners>
         <listener topic="com.intellij.codeInsight.lookup.LookupManagerListener"
-                  class="ee.carlrobert.codegpt.completions.MethodNameLookupListener"/>
+                  class="ee.carlrobert.codegpt.refactorings.RenameCompletionLookupListener"/>
+        <listener topic="com.intellij.codeInsight.lookup.LookupManagerListener"
+                  class="ee.carlrobert.codegpt.CodeGPTLookupListener"/>
         <listener topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"
                   class="ee.carlrobert.codegpt.toolwindow.chat.ChatToolWindowListener"/>
     </projectListeners>
@@ -24,6 +27,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="ee.carlrobert.codegpt.CodeGPTProjectActivity"/>
         <postStartupActivity implementation="ee.carlrobert.codegpt.CodeGPTUpdateActivity"/>
+        <editorFactoryListener implementation="ee.carlrobert.codegpt.CodeGPTEditorFactoryListener"/>
         <applicationConfigurable id="settings.codegpt" parentId="tools" displayName="CodeGPT"
             instance="ee.carlrobert.codegpt.settings.GeneralSettingsConfigurable"/>
         <applicationConfigurable id="settings.codegpt.services" parentId="settings.codegpt" displayName="Providers"
@@ -44,9 +48,9 @@
           instance="ee.carlrobert.codegpt.settings.service.LlamaServiceConfigurable"/>
         <applicationConfigurable id="settings.codegpt.services.ollama" parentId="settings.codegpt.services" displayName="Ollama (Local)"
           instance="ee.carlrobert.codegpt.settings.service.ollama.OllamaSettingsConfigurable"/>
-        <applicationConfigurable id="settings.codegpt.personas" parentId="settings.codegpt" displayName="Personas"
-          instance="ee.carlrobert.codegpt.settings.persona.PersonasConfigurable"/>
-        <applicationConfigurable id="settings.codegpt.dcoumentations" parentId="settings.codegpt" displayName="Documentations"
+        <applicationConfigurable id="settings.codegpt.prompts" parentId="settings.codegpt" displayName="Prompts"
+          instance="ee.carlrobert.codegpt.settings.prompts.PromptsConfigurable"/>
+        <applicationConfigurable id="settings.codegpt.documentations" parentId="settings.codegpt" displayName="Documentations"
           instance="ee.carlrobert.codegpt.settings.documentation.DocumentationsConfigurable"/>
         <applicationConfigurable id="settings.codegpt.configuration" parentId="settings.codegpt" displayName="Configuration"
             instance="ee.carlrobert.codegpt.settings.configuration.ConfigurationConfigurable"/>
@@ -57,6 +61,7 @@
           instance="ee.carlrobert.codegpt.telemetry.ui.preferences.TelemetryConfigurable"
           id="tools.preferences.codegpt.telemetry"
           displayName="Telemetry"/>
+        <actionPromoter implementation="ee.carlrobert.codegpt.actions.InlayActionPromoter"/>
         <applicationService
           serviceImplementation="ee.carlrobert.codegpt.telemetry.core.service.TelemetryServiceFactory"/>
         <applicationService serviceImplementation="ee.carlrobert.codegpt.settings.GeneralSettings"/>
@@ -79,21 +84,49 @@
         <notificationGroup id="CodeGPT Notification Group Sticky" displayType="STICKY_BALLOON" key="notification.group.sticky.name"/>
         <statusBarWidgetFactory order="first" id="ee.carlrobert.codegpt.statusbar.widget"
           implementation="ee.carlrobert.codegpt.statusbar.CodeGPTStatusBarWidgetFactory"/>
+        <nameSuggestionProvider implementation="ee.carlrobert.codegpt.refactorings.DefaultNameSuggestionProvider"/>
     </extensions>
 
     <resource-bundle>messages.codegpt</resource-bundle>
 
     <actions>
-        <action
-          id="codegpt.applyInlaysNextWord"
-          text="Apply next word"
-          class="ee.carlrobert.codegpt.codecompletions.ApplyNextWordInlayAction">
-            <keyboard-shortcut first-keystroke="control meta alt RIGHT" keymap="$default"/>
-            <keyboard-shortcut first-keystroke="control meta alt RIGHT" keymap="Mac OS X" replace-all="true"/>
-            <keyboard-shortcut first-keystroke="control meta alt RIGHT" keymap="Mac OS X 10.5+" replace-all="true"/>
-            <override-text place="MainMenu" text="Accept Next Word"/>
-            <override-text place="EditorPopup" text="Accept Next Word"/>
+        <action id="InsertInlineCompletionAction" class="ee.carlrobert.codegpt.codecompletions.CodeCompletionInsertAction" overrides="true">
+            <add-to-group group-id="InlineCompletion" anchor="first"/>
+            <keyboard-shortcut first-keystroke="TAB" keymap="$default"/>
         </action>
+
+        <action
+          id="codegpt.acceptNextPrediction"
+          text="Accept Prediction"
+          class="ee.carlrobert.codegpt.predictions.AcceptNextPredictionRevisionAction">
+            <keyboard-shortcut first-keystroke="TAB" keymap="$default"/>
+        </action>
+
+        <action
+          id="codegpt.triggerCustomPrediction"
+          text="Trigger Prediction Manually"
+          class="ee.carlrobert.codegpt.predictions.TriggerCustomPredictionAction">
+            <keyboard-shortcut first-keystroke="ctrl ENTER" keymap="$default"/>
+        </action>
+
+        <action
+          id="codegpt.openPrediction"
+          text="Open Prediction"
+          class="ee.carlrobert.codegpt.predictions.OpenPredictionAction">
+            <keyboard-shortcut first-keystroke="ctrl shift ENTER" keymap="$default"/>
+        </action>
+
+        <action
+          id="codegpt.acceptNextInlayWord"
+          text="Apply next word"
+          use-shortcut-of="EditorNextWord"
+          class="ee.carlrobert.codegpt.codecompletions.AcceptNextWordInlayAction"/>
+
+        <action
+          id="codegpt.acceptNextInlayLine"
+          text="Apply next line"
+          use-shortcut-of="EditorLineEnd"
+          class="ee.carlrobert.codegpt.codecompletions.AcceptNextLineInlayAction"/>
 
         <group id="CodeGPTEditorPopup">
             <group id="action.editor.group.EditorActionGroup"
@@ -109,23 +142,11 @@
                     <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt shift N" replace-all="true"/>
                 </action>
                 <action
-                  id="CodeGPT.AddSelectionToContext"
-                  class="ee.carlrobert.codegpt.actions.editor.AddSelectionToContextAction"
-                  text="Include Selection in Prompt"
-                  description="Adds the selected text to the CodeGPT context">
-                    <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift I" replace-all="true"/>
-                </action>
-                <action
-                  id="CodeGPT.EditCode"
+                  id="CodeGPT.ContextMenuEditCodeAction"
                   text="Edit Code"
-                  class="ee.carlrobert.codegpt.actions.editor.EditCodeAction">
+                  description="Edit code from editor's context menu"
+                  class="ee.carlrobert.codegpt.actions.editor.EditCodeContextMenuAction">
                     <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift K" replace-all="true"/>
-                </action>
-                <action
-                  id="CodeGPT.IncludeFileInContext"
-                  text="Include File In Prompt"
-                  class="ee.carlrobert.codegpt.actions.IncludeFilesInContextAction">
-                    <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt shift F" replace-all="true"/>
                 </action>
                 <action
                   id="CodeGPT.AskQuestion"
@@ -165,18 +186,25 @@
             <separator/>
         </group>
 
+        <group id="CodeGPT.VcsLogContextMenu">
+            <separator/>
+            <action
+              id="CodeGPT.ExplainGitCommitAction"
+              class="ee.carlrobert.codegpt.actions.ExplainGitCommitAction"/>
+            <add-to-group
+              group-id="Vcs.Log.ContextMenu"
+              relative-to-action="Vcs.Log.CompareRevisions"
+              anchor="after"/>
+            <separator/>
+        </group>
+
         <group id="CodeGPT.FloatingCodeToolbarMenuRootGroup">
             <action
-              id="CodeGPT.ModifySelectionAction"
-              text="CodeGPT: Edit Code"
-              class="ee.carlrobert.codegpt.actions.editor.EditCodeAction">
+              id="CodeGPT.FloatingMenuEditCodeAction"
+              text="Edit Code"
+              description="Edit code from editor's floating menu"
+              class="ee.carlrobert.codegpt.actions.editor.EditCodeFloatingMenuAction">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift K" replace-all="true"/>
-            </action>
-            <action
-              id="CodeGPT.AddSelectionToContextAction"
-              text="CodeGPT: Include Selection in Prompt"
-              class="ee.carlrobert.codegpt.actions.editor.AddSelectionToContextAction">
-                <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift I" replace-all="true"/>
             </action>
             <add-to-group
               group-id="Floating.CodeToolbar"
@@ -184,6 +212,17 @@
               anchor="before"/>
             <separator/>
         </group>
+
+        <action
+          id="CodeGPT.AddSelectionToContext"
+          class="ee.carlrobert.codegpt.actions.editor.AddSelectionToContextAction"
+          text="Include Selection in Prompt"
+          description="Adds the selected text to the CodeGPT context">
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift I" replace-all="true"/>
+
+            <add-to-group group-id="action.editor.group.EditorActionGroup" anchor="after" relative-to-action="CodeGPT.NewChat"/>
+            <add-to-group group-id="CodeGPT.FloatingCodeToolbarMenuRootGroup" anchor="after" relative-to-action="CodeGPT.FloatingMenuEditCodeAction"/>
+        </action>
 
         <action
           id="codegpt.openSettings"
@@ -204,6 +243,22 @@
           id="statusbar.disableCompletions"
           class="ee.carlrobert.codegpt.actions.DisableCompletionsAction">
             <keyboard-shortcut first-keystroke="ctrl shift alt c" keymap="$default"/>
+
+            <override-text place="MainMenu"/>
+            <override-text place="popup" use-text-of-place="MainMenu"/>
+        </action>
+        <action
+          id="statusbar.enableCodeAssistant"
+          class="ee.carlrobert.codegpt.actions.EnableCodeAssistantAction">
+            <keyboard-shortcut first-keystroke="ctrl shift alt a" keymap="$default"/>
+
+            <override-text place="MainMenu"/>
+            <override-text place="popup" use-text-of-place="MainMenu"/>
+        </action>
+        <action
+          id="statusbar.disableCodeAssistant"
+          class="ee.carlrobert.codegpt.actions.DisableCodeAssistantAction">
+            <keyboard-shortcut first-keystroke="ctrl shift alt a" keymap="$default"/>
 
             <override-text place="MainMenu"/>
             <override-text place="popup" use-text-of-place="MainMenu"/>
@@ -230,15 +285,30 @@
             <separator/>
             <reference id="statusbar.stopServer" />
             <reference id="statusbar.startServer" />
+            <reference id="statusbar.disableCodeAssistant" />
+            <reference id="statusbar.enableCodeAssistant" />
             <reference id="statusbar.disableCompletions" />
             <reference id="statusbar.enableCompletions" />
         </group>
 
-        <group id="CodeGPT.GenerateGitCommitMessageGroup">
+        <group id="CodeGPT.GenerateGitCommitMessageGroup"
+               text="CodeGPT"
+               popup="true"
+               icon="ee.carlrobert.codegpt.Icons.DefaultSmall">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
             <action
-              id="CodeGPT.GenerateGitCommitMessage"
-              class="ee.carlrobert.codegpt.actions.GenerateGitCommitMessageAction" />
+                id="CodeGPT.GenerateGitCommitMessage"
+                text="Generate Commit Message"
+                class="ee.carlrobert.codegpt.actions.GenerateCommitMessageAction"/>
+            <action
+                id="CodeGPT.GenerateGitCommitMessageWithAdditionalInput"
+                text="Generate Commit Message with Additional Input"
+                class="ee.carlrobert.codegpt.actions.GenerateCommitMessageWithAdditionalInputAction"/>
+            <separator/>
+            <action
+              id="CodeGPT.ReviewChanges"
+              text="Review Changes"
+              class="ee.carlrobert.codegpt.actions.ReviewChangesAction"/>
         </group>
     </actions>
 </idea-plugin>

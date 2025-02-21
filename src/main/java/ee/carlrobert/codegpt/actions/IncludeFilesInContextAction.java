@@ -6,7 +6,6 @@ import static ee.carlrobert.codegpt.settings.IncludedFilesSettingsState.DEFAULT_
 import static ee.carlrobert.codegpt.settings.IncludedFilesSettingsState.DEFAULT_REPEATABLE_CONTEXT;
 import static java.lang.String.format;
 
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
@@ -24,10 +23,8 @@ import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UI.PanelFactory;
 import ee.carlrobert.codegpt.CodeGPTBundle;
-import ee.carlrobert.codegpt.CodeGPTKeys;
 import ee.carlrobert.codegpt.EncodingManager;
 import ee.carlrobert.codegpt.Icons;
-import ee.carlrobert.codegpt.ReferencedFile;
 import ee.carlrobert.codegpt.settings.IncludedFilesSettings;
 import ee.carlrobert.codegpt.ui.UIUtil;
 import ee.carlrobert.codegpt.ui.checkbox.FileCheckboxTree;
@@ -83,7 +80,6 @@ public class IncludeFilesInContextAction extends AnAction {
         totalTokensLabel,
         checkboxTree);
     if (show == OK_EXIT_CODE) {
-      project.putUserData(CodeGPTKeys.SELECTED_FILES, checkboxTree.getReferencedFiles());
       project.getMessageBus()
           .syncPublisher(IncludeFilesInContextNotifier.FILES_INCLUDED_IN_CONTEXT_TOPIC)
           .filesIncluded(checkboxTree.getReferencedFiles());
@@ -108,7 +104,7 @@ public class IncludeFilesInContextAction extends AnAction {
     private int fileCount;
     private int totalTokens;
 
-    TotalTokensLabel(List<ReferencedFile> referencedFiles) {
+    TotalTokensLabel(List<VirtualFile> referencedFiles) {
       fileCount = referencedFiles.size();
       totalTokens = calculateTotalTokens(referencedFiles);
       updateText();
@@ -149,7 +145,9 @@ public class IncludeFilesInContextAction extends AnAction {
 
     private String getVirtualFileContent(VirtualFile virtualFile) {
       try {
-        return new String(Files.readAllBytes(Paths.get(virtualFile.getPath())));
+        if (!virtualFile.isDirectory()) {
+          return new String(Files.readAllBytes(Paths.get(virtualFile.getPath())));
+        }
       } catch (IOException ex) {
         LOG.error(ex);
       }
@@ -164,9 +162,16 @@ public class IncludeFilesInContextAction extends AnAction {
           FileUtil.convertLongValue(totalTokens)));
     }
 
-    private int calculateTotalTokens(List<ReferencedFile> referencedFiles) {
+    private int calculateTotalTokens(List<VirtualFile> referencedFiles) {
       return referencedFiles.stream()
-          .mapToInt(file -> encodingManager.countTokens(file.getFileContent()))
+          .mapToInt(file -> {
+            try {
+              return encodingManager.countTokens(
+                  new String(file.contentsToByteArray(), file.getCharset()));
+            } catch (IOException e) {
+              throw new RuntimeException("Failed to read file content", e);
+            }
+          })
           .sum();
     }
   }

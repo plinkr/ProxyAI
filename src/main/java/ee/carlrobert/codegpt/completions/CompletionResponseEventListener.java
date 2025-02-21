@@ -16,9 +16,15 @@ public interface CompletionResponseEventListener {
   default void handleTokensExceeded(Conversation conversation, Message message) {
   }
 
-  default void handleCompleted(String fullMessage, CallParameters callParameters) {
+  default void handleCompleted(String fullMessage) {
+  }
+
+  default void handleCompleted(String fullMessage, ChatCompletionParameters callParameters) {
   }
 
   default void handleCodeGPTEvent(CodeGPTEvent event) {
+  }
+
+  default void handleRequestOpen() {
   }
 }

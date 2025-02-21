@@ -5,8 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
@@ -160,9 +158,9 @@ object FileUtil {
     }
 
     @JvmStatic
-    fun getResourceContent(name: String?): String {
+    fun getResourceContent(filePath: String?): String {
         try {
-            Objects.requireNonNull(name?.let { FileUtil::class.java.getResourceAsStream(it) })
+            Objects.requireNonNull(filePath?.let { FileUtil::class.java.getResourceAsStream(it) })
                 .use { stream ->
                     return String(stream.readAllBytes(), StandardCharsets.UTF_8)
                 }
@@ -246,7 +244,8 @@ object FileUtil {
             }
         })
 
-        return results.sortedByDescending { it.score }
+        return results
+            .sortedByDescending { it.score }
             .take(maxResults)
             .map { it.file }
     }

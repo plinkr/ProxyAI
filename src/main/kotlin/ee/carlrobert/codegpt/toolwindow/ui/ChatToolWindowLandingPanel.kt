@@ -4,7 +4,7 @@ import com.intellij.ui.components.ActionLink
 import com.intellij.util.ui.JBUI
 import ee.carlrobert.codegpt.Icons
 import ee.carlrobert.codegpt.settings.GeneralSettings
-import ee.carlrobert.codegpt.toolwindow.chat.ui.ResponsePanel
+import ee.carlrobert.codegpt.settings.prompts.ChatActionsState
 import ee.carlrobert.codegpt.ui.UIUtil.createTextPane
 import java.awt.BorderLayout
 import java.awt.Point
@@ -13,7 +13,7 @@ import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.JPanel
 
-class ChatToolWindowLandingPanel(onAction: (LandingPanelAction, Point) -> Unit) : ResponsePanel() {
+class ChatToolWindowLandingPanel(onAction: (LandingPanelAction, Point) -> Unit) : ResponseMessagePanel() {
 
     init {
         addContent(createContent(onAction))
@@ -81,17 +81,17 @@ enum class LandingPanelAction(
     FIND_BUGS(
         "Find Bugs",
         "Find bugs in this code",
-        "Find bugs and output code with bugs fixed in the selected code: {{selectedCode}}"
+        ChatActionsState.DEFAULT_FIND_BUGS_PROMPT
     ),
     WRITE_TESTS(
         "Write Tests",
         "Write unit tests for this code",
-        "Write unit tests for the selected code: {{selectedCode}}"
+        ChatActionsState.DEFAULT_WRITE_TESTS_PROMPT
     ),
     EXPLAIN(
         "Explain",
         "Explain the selected code",
-        "Explain the selected code: {{selectedCode}}"
+        ChatActionsState.DEFAULT_EXPLAIN_PROMPT
     )
 }
 

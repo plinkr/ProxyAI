@@ -27,21 +27,12 @@ object EditorDiffUtil {
         val mainEditor = project.service<FileEditorManager>().selectedTextEditor ?: return
         val mainEditorFile =
             service<FileDocumentManager>().getFile(mainEditor.document) ?: return
-        val tempFile = createTempDiffFile(mainEditor, toolwindowEditor, highlightedText)
+        val tempFile = LightVirtualFile(
+            mainEditorFile.name,
+            createTempDiffContent(mainEditor, toolwindowEditor, highlightedText)
+        )
         DiffManager.getInstance()
-            .showDiff(project, createDiffRequest(project, tempFile, mainEditor, mainEditorFile))
-    }
-
-    private fun createTempDiffFile(
-        mainEditor: Editor,
-        toolwindowEditor: Editor,
-        highlightedText: String
-    ): VirtualFile {
-        val diffContent = createTempDiffContent(mainEditor, toolwindowEditor, highlightedText)
-        val toolwindowEditorFile =
-            service<FileDocumentManager>().getFile(toolwindowEditor.document)
-                ?: throw IllegalStateException("Toolwindow editor file not found")
-        return LightVirtualFile("content_diff_${toolwindowEditorFile.name}", diffContent)
+            .showDiff(project, createDiffRequest(project, tempFile, mainEditor))
     }
 
     private fun createTempDiffContent(
@@ -57,11 +48,11 @@ object EditorDiffUtil {
                 mainDocumentContent.substring(endIndex)
     }
 
-    private fun createDiffRequest(
+    @JvmStatic
+    fun createDiffRequest(
         project: Project,
         tempFile: VirtualFile,
         mainEditor: Editor,
-        mainEditorFile: VirtualFile
     ): SimpleDiffRequest {
         val diffContentFactory = DiffContentFactory.getInstance()
         val tempFileDiffContent = diffContentFactory.create(project, tempFile).apply {
@@ -70,9 +61,9 @@ object EditorDiffUtil {
 
         return SimpleDiffRequest(
             CodeGPTBundle.get("editor.diff.title"),
-            diffContentFactory.create(project, mainEditorFile),
+            diffContentFactory.create(project, mainEditor.virtualFile),
             tempFileDiffContent,
-            mainEditorFile.name,
+            mainEditor.virtualFile.name,
             CodeGPTBundle.get("editor.diff.local.content.title")
         ).apply {
             putUserData(

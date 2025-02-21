@@ -15,7 +15,7 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.ui.FormBuilder
 import ee.carlrobert.codegpt.CodeGPTBundle
-import ee.carlrobert.codegpt.credentials.CredentialsStore.CredentialKey.OLLAMA_API_KEY
+import ee.carlrobert.codegpt.credentials.CredentialsStore.CredentialKey.OllamaApikey
 import ee.carlrobert.codegpt.credentials.CredentialsStore.getCredential
 import ee.carlrobert.codegpt.credentials.CredentialsStore.setCredential
 import ee.carlrobert.codegpt.settings.service.CodeCompletionConfigurationForm
@@ -51,6 +51,7 @@ class OllamaSettingsForm {
         val settings = service<OllamaSettings>().state
         codeCompletionConfigurationForm = CodeCompletionConfigurationForm(
             settings.codeCompletionsEnabled,
+            settings.fimOverride,
             settings.fimTemplate
         )
         val emptyModelsComboBoxModel =
@@ -71,7 +72,7 @@ class OllamaSettingsForm {
         apiKeyField = JBPasswordField().apply {
             columns = 30
             text = runBlocking(Dispatchers.IO) {
-                getCredential(OLLAMA_API_KEY)
+                getCredential(OllamaApikey)
             }
         }
         refreshModels(settings.model)
@@ -123,8 +124,9 @@ class OllamaSettingsForm {
             modelComboBox.item = model ?: ""
             codeCompletionConfigurationForm.isCodeCompletionsEnabled = codeCompletionsEnabled
             codeCompletionConfigurationForm.fimTemplate = fimTemplate
+            codeCompletionConfigurationForm.fimOverride != fimOverride
         }
-        apiKeyField.text = getCredential(OLLAMA_API_KEY)
+        apiKeyField.text = getCredential(OllamaApikey)
     }
 
     fun applyChanges() {
@@ -133,8 +135,9 @@ class OllamaSettingsForm {
             model = modelComboBox.item
             codeCompletionsEnabled = codeCompletionConfigurationForm.isCodeCompletionsEnabled
             fimTemplate = codeCompletionConfigurationForm.fimTemplate!!
+            fimOverride = codeCompletionConfigurationForm.fimOverride ?: false
         }
-        setCredential(OLLAMA_API_KEY, getApiKey())
+        setCredential(OllamaApikey, getApiKey())
     }
 
     fun isModified() = service<OllamaSettings>().state.run {
@@ -142,7 +145,8 @@ class OllamaSettingsForm {
                 || (modelComboBox.item != model && modelComboBox.isEnabled)
                 || codeCompletionConfigurationForm.isCodeCompletionsEnabled != codeCompletionsEnabled
                 || codeCompletionConfigurationForm.fimTemplate != fimTemplate
-                || getApiKey() != getCredential(OLLAMA_API_KEY)
+                || codeCompletionConfigurationForm.fimOverride != fimOverride
+                || getApiKey() != getCredential(OllamaApikey)
     }
 
     private fun refreshModels(currentModel: String?) {
@@ -155,8 +159,8 @@ class OllamaSettingsForm {
                     .build()
                     .modelTags
                     .models
-                    .map { it.name }
-                    .sortedWith(compareBy({ it.split(":").first() }, {
+                    ?.map { it.name }
+                    ?.sortedWith(compareBy({ it.split(":").first() }, {
                         if (it.contains("latest")) 1 else 0
                     }))
             } catch (t: Throwable) {

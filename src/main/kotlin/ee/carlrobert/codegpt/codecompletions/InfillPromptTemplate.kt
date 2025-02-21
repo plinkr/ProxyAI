@@ -1,5 +1,8 @@
 package ee.carlrobert.codegpt.codecompletions
 
+import ee.carlrobert.codegpt.codecompletions.psi.structure.ClassStructureSerializer
+import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
+
 enum class InfillPromptTemplate(val label: String, val stopTokens: List<String>? = listOf("\n\n")) {
 
     OPENAI("OpenAI") {
@@ -50,6 +53,61 @@ enum class InfillPromptTemplate(val label: String, val stopTokens: List<String>?
             }
         }
     },
+    CODE_QWEN_2_5(
+        "CodeQwen2.5",
+        listOf(
+            "diff --git",
+            "package ",
+            "import ",
+            "<|endoftext|>",
+            "<|fim_prefix|>",
+            "<|fim_middle|>",
+            "<|fim_suffix|>",
+            "<|fim_pad|>",
+            "<|cursor|>",
+            "<|repo_name|>",
+            "<|file_sep|>",
+            "<|im_start|>",
+            "<|im_end|>"
+        )
+    ) {
+        override fun buildPrompt(infillDetails: InfillRequest): String {
+            val infillPrompt =
+                "<|fim_prefix|> ${infillDetails.prefix} <|fim_suffix|>${infillDetails.suffix} <|fim_middle|>"
+
+            return when {
+                infillDetails.dependenciesStructure != null -> {
+                    "<|repo_name|>${infillDetails.repositoryName}\n" +
+                            infillDetails.dependenciesStructure.joinToString(separator = "\n", prefix = "\n") {
+                                "<|file_sep|>${it.name.value}\n${ClassStructureSerializer.serialize(it)}\n"
+                            } +
+                            infillDetails.context?.contextElements?.ifNotEmpty {
+                                map {
+                                    "<|file_sep|>${it.filePath()} \n" +
+                                            it.text()
+                                }.joinToString("") { it + "\n" } +
+                                        "<|file_sep|>${infillDetails.context.enclosingElement.filePath()} \n"
+                            } +
+                            infillPrompt
+
+                }
+
+                infillDetails.context != null && infillDetails.context.contextElements.isNotEmpty() -> {
+                    "<|repo_name|>${infillDetails.context.getRepoName()}\n" +
+                            infillDetails.context.contextElements.map {
+                                "<|file_sep|>${it.filePath()} \n" +
+                                        it.text()
+                            }.joinToString("") { it + "\n" } +
+                            "<|file_sep|>${infillDetails.context.enclosingElement.filePath()} \n" +
+                            infillPrompt
+                }
+
+                else -> {
+                    infillPrompt
+                }
+            }
+        }
+    },
     STABILITY("Stability AI", listOf("<|endoftext|>")) {
         override fun buildPrompt(infillDetails: InfillRequest): String {
             val infillPrompt =
@@ -93,7 +151,8 @@ enum class InfillPromptTemplate(val label: String, val stopTokens: List<String>?
     CODESTRAL("Codestral", listOf("</s>")) {
         override fun buildPrompt(infillDetails: InfillRequest): String {
             // see https://github.com/mistralai/mistral-common/blob/master/src/mistral_common/tokens/tokenizers/base.py
-            val infillPrompt = "[SUFFIX]${infillDetails.suffix}[PREFIX]${infillDetails.prefix}[MIDDLE]"
+            val infillPrompt =
+                "[SUFFIX]${infillDetails.suffix}[PREFIX]${infillDetails.prefix}[MIDDLE]"
             return createDefaultMultiFilePrompt(infillDetails, infillPrompt)
         }
     };

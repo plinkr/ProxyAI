@@ -1,10 +1,12 @@
 package ee.carlrobert.codegpt.ui.checkbox;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.CheckedTreeNode;
 import com.intellij.util.PlatformIcons;
 import ee.carlrobert.codegpt.ReferencedFile;
+import ee.carlrobert.codegpt.ui.OverlayUtil;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -17,14 +19,15 @@ public class VirtualFileCheckboxTree extends FileCheckboxTree {
     super(createFileTypesRenderer(), createRootNode(rootFiles));
   }
 
-  public List<ReferencedFile> getReferencedFiles() {
+  public List<VirtualFile> getReferencedFiles() {
     var checkedNodes = getCheckedNodes(VirtualFile.class, Objects::nonNull);
-    if (checkedNodes.length > 1000) {
+    if (checkedNodes.length > 1024) {
+      OverlayUtil.showNotification("Too many files selected.", NotificationType.ERROR);
       throw new RuntimeException("Too many files selected");
     }
 
     return Arrays.stream(checkedNodes)
-        .map(item -> new ReferencedFile(new File(item.getPath())))
+        .filter(Objects::nonNull)
         .toList();
   }
 

@@ -5,19 +5,21 @@ import com.intellij.codeInsight.inline.completion.elements.InlineCompletionEleme
 import com.intellij.codeInsight.inline.completion.elements.InlineCompletionGrayTextElement
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSingleSuggestion
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSuggestion
-import com.intellij.openapi.application.runInEdt
+import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
-import com.intellij.openapi.editor.Editor
-import ee.carlrobert.codegpt.CodeGPTKeys.IS_FETCHING_COMPLETION
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
 import ee.carlrobert.codegpt.CodeGPTKeys.REMAINING_EDITOR_COMPLETION
 import ee.carlrobert.codegpt.settings.GeneralSettings
+import ee.carlrobert.codegpt.settings.configuration.ConfigurationSettings
 import ee.carlrobert.codegpt.settings.service.ServiceType
 import ee.carlrobert.codegpt.settings.service.codegpt.CodeGPTServiceSettings
-import ee.carlrobert.codegpt.settings.service.custom.CustomServiceSettings
+import ee.carlrobert.codegpt.settings.service.custom.CustomServicesSettings
 import ee.carlrobert.codegpt.settings.service.llama.LlamaSettings
 import ee.carlrobert.codegpt.settings.service.ollama.OllamaSettings
 import ee.carlrobert.codegpt.settings.service.openai.OpenAISettings
+import ee.carlrobert.codegpt.util.StringUtil.extractUntilNewline
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.channelFlow
@@ -50,35 +52,76 @@ class DebouncedCodeCompletionProvider : DebouncedInlineCompletionProvider() {
         get() = CodeCompletionProviderPresentation()
 
     override suspend fun getSuggestionDebounced(request: InlineCompletionRequest): InlineCompletionSuggestion {
+        return if (service<ConfigurationSettings>().state.codeCompletionSettings.multiLineEnabled) {
+            getMultiLineSuggestionDebounced(request)
+        } else {
+            getSingleLineSuggestionDebounced(request)
+        }
+    }
+
+    private fun getSingleLineSuggestionDebounced(request: InlineCompletionRequest): InlineCompletionSuggestion {
         val editor = request.editor
-        val remainingCompletion = REMAINING_EDITOR_COMPLETION.get(editor)
-        if (request.event is InlineCompletionEvent.DirectCall
-            && remainingCompletion != null
-            && remainingCompletion.isNotEmpty()
+        val remainingCompletion = REMAINING_EDITOR_COMPLETION.get(editor) ?: ""
+        if (request.event is InlineCompletionEvent.DirectCall && remainingCompletion.isNotEmpty()
         ) {
-            return sendNextSuggestion(remainingCompletion)
+            return sendNextSuggestion(remainingCompletion.extractUntilNewline(), request)
         }
 
-        val project = editor.project
+        return getSuggestionDebounced(
+            request,
+            CompletionType.SINGLE_LINE
+        ) { project, infillRequest ->
+            project.service<CodeCompletionService>()
+                .getCodeCompletionAsync(
+                    infillRequest,
+                    CodeCompletionSingleLineEventListener(request.editor, infillRequest) {
+                        trySend(it)
+                    }
+                )
+        }
+    }
+
+    private fun getMultiLineSuggestionDebounced(request: InlineCompletionRequest): InlineCompletionSuggestion {
+        return getSuggestionDebounced(
+            request,
+            CompletionType.MULTI_LINE
+        ) { project, infillRequest ->
+            project.service<CodeCompletionService>()
+                .getCodeCompletionAsync(
+                    infillRequest,
+                    CodeCompletionMultiLineEventListener(request) {
+                        trySend(InlineCompletionGrayTextElement(it))
+                    }
+                )
+        }
+    }
+
+    private fun getSuggestionDebounced(
+        request: InlineCompletionRequest,
+        completionType: CompletionType,
+        fetchCompletion: ProducerScope<InlineCompletionElement>.(Project, InfillRequest) -> EventSource
+    ): InlineCompletionSuggestion {
+        val project = request.editor.project
         if (project == null) {
             logger.error("Could not find project")
             return InlineCompletionSingleSuggestion.build(elements = emptyFlow())
         }
 
+        if (LookupManager.getActiveLookup(request.editor) != null) {
+            return InlineCompletionSingleSuggestion.build(elements = emptyFlow())
+        }
+
+        if (LookupManager.getActiveLookup(request.editor) != null) {
+            return InlineCompletionSingleSuggestion.build(elements = emptyFlow())
+        }
+
+        request.editor.project?.let {
+            CompletionProgressNotifier.update(it, true)
+        }
+
         return InlineCompletionSingleSuggestion.build(elements = channelFlow {
-            REMAINING_EDITOR_COMPLETION.set(request, "")
-            IS_FETCHING_COMPLETION.set(request.editor, true)
-
-            request.editor.project?.messageBus
-                ?.syncPublisher(CodeCompletionProgressNotifier.CODE_COMPLETION_PROGRESS_TOPIC)
-                ?.loading(true)
-
-            val infillRequest = InfillRequestUtil.buildInfillRequest(request)
-            val call = project.service<CodeCompletionService>().getCodeCompletionAsync(
-                infillRequest,
-                getEventListener(request.editor, infillRequest)
-            )
-            currentCallRef.set(call)
+            val infillRequest = InfillRequestUtil.buildInfillRequest(request, completionType)
+            currentCallRef.set(fetchCompletion(project, infillRequest))
             awaitClose { currentCallRef.getAndSet(null)?.cancel() }
         })
     }
@@ -92,7 +135,7 @@ class DebouncedCodeCompletionProvider : DebouncedInlineCompletionProvider() {
         val codeCompletionsEnabled = when (selectedService) {
             ServiceType.CODEGPT -> service<CodeGPTServiceSettings>().state.codeCompletionSettings.codeCompletionsEnabled
             ServiceType.OPENAI -> OpenAISettings.getCurrentState().isCodeCompletionsEnabled
-            ServiceType.CUSTOM_OPENAI -> service<CustomServiceSettings>().state.codeCompletionSettings.codeCompletionsEnabled
+            ServiceType.CUSTOM_OPENAI -> service<CustomServicesSettings>().state.active.codeCompletionSettings.codeCompletionsEnabled
             ServiceType.LLAMA_CPP -> LlamaSettings.isCodeCompletionsPossible()
             ServiceType.OLLAMA -> service<OllamaSettings>().state.codeCompletionsEnabled
             ServiceType.ANTHROPIC,
@@ -100,34 +143,33 @@ class DebouncedCodeCompletionProvider : DebouncedInlineCompletionProvider() {
             ServiceType.GOOGLE,
             null -> false
         }
+
+        if (!codeCompletionsEnabled) {
+            return false
+        }
+
+        if (LookupManager.getActiveLookup(event.toRequest()?.editor) != null) {
+            return false
+        }
+
         val containsActiveCompletion =
             REMAINING_EDITOR_COMPLETION.get(event.toRequest()?.editor)?.isNotEmpty() ?: false
 
-        return (event is InlineCompletionEvent.DocumentChange && codeCompletionsEnabled)
-                || containsActiveCompletion
+        return event is InlineCompletionEvent.DocumentChange || containsActiveCompletion
     }
 
-    private fun ProducerScope<InlineCompletionElement>.getEventListener(
-        editor: Editor,
-        infillRequest: InfillRequest
-    ) = object : CodeCompletionCompletionEventListener(editor, infillRequest) {
-        override fun onMessage(message: String) {
-            runInEdt {
-                trySend(InlineCompletionGrayTextElement(message))
-            }
-        }
+    private fun sendNextSuggestion(
+        nextCompletion: String,
+        request: InlineCompletionRequest
+    ): InlineCompletionSingleSuggestion {
 
-        override fun onComplete(fullMessage: String) {
-            REMAINING_EDITOR_COMPLETION.set(editor, fullMessage)
-        }
-    }
-
-    private fun sendNextSuggestion(nextCompletion: String): InlineCompletionSingleSuggestion {
         return InlineCompletionSingleSuggestion.build(elements = channelFlow {
             launch {
                 trySend(
-                    InlineCompletionGrayTextElement(
-                        nextCompletion.lines().take(2).joinToString("\n")
+                    CodeCompletionTextElement(
+                        nextCompletion,
+                        request.startOffset,
+                        TextRange.from(request.startOffset, nextCompletion.length),
                     )
                 )
             }

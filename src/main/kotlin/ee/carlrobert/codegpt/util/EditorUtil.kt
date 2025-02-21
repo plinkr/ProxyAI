@@ -1,8 +1,8 @@
 package ee.carlrobert.codegpt.util
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.application.runUndoTransparentWriteAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
@@ -10,16 +10,19 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.EditorKind
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.TextEditor
-import com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.text.StringUtil
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.testFramework.LightVirtualFile
 import ee.carlrobert.codegpt.settings.configuration.ConfigurationSettings
+import ee.carlrobert.llm.client.codegpt.request.prediction.FileDetails
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -32,18 +35,13 @@ object EditorUtil {
             String.format("%s/%s", PathManager.getTempPath(), fileName),
             code
         )
-        val existingDocument = FileDocumentManager.getInstance().getDocument(lightVirtualFile)
-        val document = existingDocument ?: EditorFactory.getInstance().createDocument(code)
-
-        disableHighlighting(project, document)
-
-        return EditorFactory.getInstance().createEditor(
-            document,
-            project,
-            lightVirtualFile,
-            true,
-            EditorKind.MAIN_EDITOR
-        )
+        val editorFactory = EditorFactory.getInstance()
+        val document = editorFactory.createDocument(code)
+        val editor = editorFactory
+            .createEditor(document, project, lightVirtualFile, true, EditorKind.UNTYPED)
+        (editor as EditorEx).backgroundColor =
+            service<EditorColorsManager>().globalScheme.defaultBackground
+        return editor
     }
 
     @JvmStatic
@@ -78,28 +76,43 @@ object EditorUtil {
 
     @JvmStatic
     fun getSelectedEditor(project: Project): Editor? {
-        val editorManager = FileEditorManager.getInstance(project)
-        return editorManager?.selectedTextEditor
+        return FileEditorManager.getInstance(project)?.selectedTextEditor
+    }
+
+    fun getSelectedEditorFile(project: Project): VirtualFile? {
+        return getSelectedEditor(project)?.virtualFile
+    }
+
+    @JvmStatic
+    fun getOpenLocalFiles(project: Project): List<VirtualFile> {
+        return FileEditorManager.getInstance(project).openFiles
+            .filter { it.isValid && it.isInLocalFileSystem }
+            .sortedBy { it.modificationStamp }
+            .toList()
+    }
+
+    @JvmStatic
+    fun getOpenFiles(project: Project): List<FileDetails> {
+        val fileDocumentManager = FileDocumentManager.getInstance()
+        return FileEditorManager.getInstance(project).openFiles
+            .mapNotNull {
+                runReadAction {
+                    FileDetails().apply {
+                        name = it.name
+                        content = fileDocumentManager.getDocument(it)?.text ?: ""
+                        modificationStamp = it.modificationStamp
+                    }
+                }
+            }
+            .filter { !it.content.isNullOrEmpty() }
+            .sortedBy { it.modificationStamp }
+            .toList()
     }
 
     @JvmStatic
     fun getSelectedEditorSelectedText(project: Project): String? {
         val selectedEditor = getSelectedEditor(project)
         return selectedEditor?.selectionModel?.selectedText
-    }
-
-    @JvmStatic
-    fun isSelectedEditor(editor: Editor): Boolean {
-        val project = editor.project
-        if (project != null && !project.isDisposed) {
-            val editorManager = FileEditorManager.getInstance(project) ?: return false
-            if (editorManager is FileEditorManagerImpl) {
-                return editor == editorManager.getSelectedTextEditor(true)
-            }
-            val current = editorManager.selectedEditor
-            return (current is TextEditor) && editor == current.editor
-        }
-        return false
     }
 
     @JvmStatic
@@ -119,6 +132,23 @@ object EditorUtil {
         }
     }
 
+    fun String.adjustWhitespaces(editor: Editor): String {
+        val document = editor.document
+        val adjustedLine = runReadAction {
+            val lineNumber = document.getLineNumber(editor.caretModel.offset)
+            val editorLine = document.getText(
+                TextRange(
+                    document.getLineStartOffset(lineNumber),
+                    document.getLineEndOffset(lineNumber)
+                )
+            )
+
+            ee.carlrobert.codegpt.util.StringUtil.adjustWhitespace(this, editorLine)
+        }
+
+        return if (adjustedLine.length != this.length) adjustedLine else this
+    }
+
     @JvmStatic
     fun reformatDocument(
         project: Project,
@@ -130,14 +160,6 @@ object EditorUtil {
         psiDocumentManager.commitDocument(document)
         psiDocumentManager.getPsiFile(document)?.let { file ->
             CodeStyleManager.getInstance(project).reformatText(file, startOffset, endOffset)
-        }
-    }
-
-    @JvmStatic
-    fun disableHighlighting(project: Project, document: Document) {
-        val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document)
-        psiFile?.let {
-            DaemonCodeAnalyzer.getInstance(project).setHighlightingEnabled(psiFile, false)
         }
     }
 

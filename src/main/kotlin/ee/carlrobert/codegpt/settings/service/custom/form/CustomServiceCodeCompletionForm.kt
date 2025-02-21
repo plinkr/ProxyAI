@@ -15,9 +15,10 @@ import ee.carlrobert.codegpt.codecompletions.CodeCompletionRequestFactory
 import ee.carlrobert.codegpt.codecompletions.InfillPromptTemplate
 import ee.carlrobert.codegpt.codecompletions.InfillRequest
 import ee.carlrobert.codegpt.completions.CompletionRequestService
-import ee.carlrobert.codegpt.settings.configuration.Placeholder
+import ee.carlrobert.codegpt.settings.Placeholder
 import ee.carlrobert.codegpt.settings.service.custom.CustomServiceCodeCompletionSettingsState
 import ee.carlrobert.codegpt.settings.service.custom.CustomServiceFormTabbedPane
+import ee.carlrobert.codegpt.settings.service.custom.form.model.CustomServiceCodeCompletionSettingsData
 import ee.carlrobert.codegpt.ui.OverlayUtil
 import ee.carlrobert.codegpt.ui.URLTextField
 import ee.carlrobert.llm.client.openai.completion.ErrorDetails
@@ -31,13 +32,17 @@ import javax.swing.JButton
 import javax.swing.JPanel
 
 class CustomServiceCodeCompletionForm(
-    state: CustomServiceCodeCompletionSettingsState,
+    state: CustomServiceCodeCompletionSettingsData,
     val getApiKey: () -> String?
 ) {
 
     private val featureEnabledCheckBox = JBCheckBox(
         CodeGPTBundle.get("codeCompletionsForm.enableFeatureText"),
         state.codeCompletionsEnabled
+    )
+    private val parseResponseAsChatCompletionsCheckBox = JBCheckBox(
+        CodeGPTBundle.get("codeCompletionsForm.parseResponseAsChatCompletions"),
+        state.parseResponseAsChatCompletions
     )
     private val promptTemplateComboBox =
         ComboBox(EnumComboBoxModel(InfillPromptTemplate::class.java)).apply {
@@ -63,6 +68,12 @@ class CustomServiceCodeCompletionForm(
         get() = featureEnabledCheckBox.isSelected
         set(enabled) {
             featureEnabledCheckBox.isSelected = enabled
+        }
+
+    var parseResponseAsChatCompletions: Boolean
+        get() = parseResponseAsChatCompletionsCheckBox.isSelected
+        set(enabled) {
+            parseResponseAsChatCompletionsCheckBox.isSelected = enabled
         }
 
     var infillTemplate: InfillPromptTemplate
@@ -93,6 +104,8 @@ class CustomServiceCodeCompletionForm(
         get() = FormBuilder.createFormBuilder()
             .addVerticalGap(8)
             .addComponent(featureEnabledCheckBox)
+            .addVerticalGap(4)
+            .addComponent(parseResponseAsChatCompletionsCheckBox)
             .addVerticalGap(4)
             .addLabeledComponent(
                 "FIM template:",
@@ -140,6 +153,7 @@ class CustomServiceCodeCompletionForm(
 
     fun resetForm(settings: CustomServiceCodeCompletionSettingsState) {
         featureEnabledCheckBox.isSelected = settings.codeCompletionsEnabled
+        parseResponseAsChatCompletionsCheckBox.isSelected = settings.parseResponseAsChatCompletions
         promptTemplateComboBox.selectedItem = settings.infillTemplate
         urlField.text = settings.url
         tabbedPane.headers = settings.headers
@@ -150,7 +164,7 @@ class CustomServiceCodeCompletionForm(
     private fun testConnection() {
         CompletionRequestService.getInstance().getCustomOpenAICompletionAsync(
             CodeCompletionRequestFactory.buildCustomRequest(
-                InfillRequest.Builder("Hello", "!").build(),
+                InfillRequest.Builder("Hello", "!", 0).build(),
                 urlField.text,
                 tabbedPane.headers,
                 tabbedPane.body,
@@ -193,7 +207,7 @@ class CustomServiceCodeCompletionForm(
 
         val description = StringEscapeUtils.escapeHtml4(
             template.buildPrompt(
-                InfillRequest.Builder("PREFIX", "SUFFIX").build(),
+                InfillRequest.Builder("PREFIX", "SUFFIX", 0).build(),
             )
         )
         HelpTooltip()

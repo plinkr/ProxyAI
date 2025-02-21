@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 
 import ee.carlrobert.codegpt.conversations.message.Message;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public enum PromptTemplate {
 
@@ -162,7 +163,7 @@ public enum PromptTemplate {
               .toString();
     }
   },
-  CODE_QWEN("CodeQwen1.5", List.of("<|endoftext|>")) {
+  CODE_QWEN("CodeQwen", List.of("<|endoftext|>")) {
     @Override
     public String buildPrompt(String systemPrompt, String userPrompt, List<Message> history) {
       StringBuilder prompt = new StringBuilder();
@@ -235,6 +236,23 @@ public enum PromptTemplate {
           .append("\n\n")
           .append("### Response:\n")
           .toString();
+    }
+  },
+  DEEPSEEK_R1("DeepSeek R1") {
+    @Override
+    public String buildPrompt(String systemPrompt, String userPrompt, List<Message> history) {
+      var historyString = history.stream()
+          .map(it -> {
+            String response = it.getResponse();
+            if (response.startsWith("<think>")) {
+              response = response.replaceAll("(?s)<think>.*?</think>", "").trim();
+            }
+            return String.format("User:\n%s\n\nAssistant:\n%s", it.getPrompt(), response);
+          })
+          .collect(Collectors.joining("\n\n"));
+
+      return "<｜begin▁of▁sentence｜>%s<｜User｜>History:\n%s\n\nUser:\n%s<｜Assistant｜>"
+          .formatted(systemPrompt, historyString, userPrompt);
     }
   },
   DEEPSEEK_CODER("DeepSeek Coder") {

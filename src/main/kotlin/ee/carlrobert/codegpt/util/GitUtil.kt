@@ -2,8 +2,13 @@ package ee.carlrobert.codegpt.util
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.diff.impl.patch.IdeaTextPatchBuilder
+import com.intellij.openapi.diff.impl.patch.UnifiedDiffWriter
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vcs.VcsException
+import com.intellij.openapi.vcs.changes.ChangeListManager
+import ee.carlrobert.codegpt.codecompletions.truncateText
 import git4idea.GitCommit
 import git4idea.commands.Git
 import git4idea.commands.GitCommand
@@ -11,6 +16,7 @@ import git4idea.commands.GitLineHandler
 import git4idea.history.GitHistoryUtils
 import git4idea.repo.GitRepository
 import git4idea.repo.GitRepositoryManager
+import java.io.StringWriter
 
 object GitUtil {
 
@@ -18,58 +24,54 @@ object GitUtil {
 
     @Throws(VcsException::class)
     @JvmStatic
-    fun getStagedDiff(
-        project: Project,
-        gitRepository: GitRepository,
-        includedVersionedFilePaths: List<String> = emptyList()
-    ): List<String> {
-        return getGitDiff(project, gitRepository, includedVersionedFilePaths, true)
-    }
-
-    @Throws(VcsException::class)
-    @JvmStatic
-    fun getUnstagedDiff(
-        project: Project,
-        gitRepository: GitRepository,
-        includedUnversionedFilePaths: List<String> = emptyList()
-    ): List<String> {
-        return getGitDiff(project, gitRepository, includedUnversionedFilePaths, false)
-    }
-
-    private fun getGitDiff(
-        project: Project,
-        gitRepository: GitRepository,
-        filePaths: List<String>,
-        staged: Boolean
-    ): List<String> {
-        val handler = GitLineHandler(project, gitRepository.root, GitCommand.DIFF)
-        if (staged) {
-            handler.addParameters("--cached")
-        }
-        handler.addParameters(
-            "--unified=2",
-            "--diff-filter=AM",
-            "--no-prefix",
-            "--no-color",
-        )
-
-        filePaths.forEach { path ->
-            handler.addParameters(path)
-        }
-
-        val commandResult = Git.getInstance().runCommand(handler)
-        return filterDiffOutput(commandResult.output)
-    }
-
-    @Throws(VcsException::class)
     fun getProjectRepository(project: Project): GitRepository? {
         val repositoryManager = project.service<GitRepositoryManager>()
-        return repositoryManager.getRepositoryForFile(project.workspaceFile)
+        return repositoryManager.getRepositoryForFile(project.guessProjectDir())
             ?: repositoryManager.repositories.firstOrNull()
     }
 
+    @JvmStatic
+    fun getCurrentChanges(project: Project): String? {
+        return getProjectRepository(project)?.let { repository ->
+            try {
+                val repoRootPath = repository.root.toNioPath()
+                val changes = ChangeListManager.getInstance(project).allChanges
+                    .sortedBy { it.virtualFile?.timeStamp }
+                val patches = IdeaTextPatchBuilder.buildPatch(
+                    project, changes, repoRootPath, false, true
+                )
+                val diffWriter = StringWriter()
+                UnifiedDiffWriter.write(
+                    null, repoRootPath, patches, diffWriter, "\n\n", null, null
+                )
+                diffWriter.toString().cleanDiff().truncateText(1024, false)
+            } catch (e: VcsException) {
+                logger.error("Failed to get git context", e)
+                null
+            }
+        }
+    }
+
     @Throws(VcsException::class)
-    fun getCommitDiff(
+    fun getCommitsForHashes(
+        project: Project,
+        repository: GitRepository,
+        commitHashes: List<String>
+    ): List<GitCommit> {
+        val result = mutableListOf<GitCommit>()
+
+        GitHistoryUtils
+            .loadDetails(project, repository.root, { commit ->
+                if (commitHashes.contains(commit.id.asString())) {
+                    result.add(commit)
+                }
+            })
+
+        return result
+    }
+
+    @Throws(VcsException::class)
+    fun getCommitDiffs(
         project: Project,
         gitRepository: GitRepository,
         commitHash: String
@@ -125,4 +127,16 @@ object GitUtil {
                     !it.startsWith("commit ")
         }
     }
+
+    private fun String.cleanDiff(showContext: Boolean = false): String =
+        lineSequence()
+            .filterNot { line ->
+                line.startsWith("index ") ||
+                        line.startsWith("diff --git") ||
+                        line.startsWith("---") ||
+                        line.startsWith("+++") ||
+                        line.startsWith("===") ||
+                        (!showContext && line.startsWith(" "))
+            }
+            .joinToString("\n")
 }

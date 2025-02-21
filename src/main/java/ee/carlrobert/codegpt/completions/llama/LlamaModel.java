@@ -64,6 +64,20 @@ public enum LlamaModel {
           HuggingFaceModel.DEEPSEEK_CODER_33B_Q3,
           HuggingFaceModel.DEEPSEEK_CODER_33B_Q4,
           HuggingFaceModel.DEEPSEEK_CODER_33B_Q5)),
+  DEEPSEEK_R1(
+      "Deepseek R1",
+      "DeepSeek-R1-Zero, a model trained via large-scale reinforcement learning (RL) "
+          + "without supervised fine-tuning (SFT) as a preliminary step, demonstrated remarkable "
+          + "performance on reasoning. DeepSeek-R1 achieves performance comparable to OpenAI-o1 "
+          + "across math, code, and reasoning tasks.",
+      PromptTemplate.DEEPSEEK_R1,
+      InfillPromptTemplate.DEEPSEEK_CODER,
+      List.of(
+          HuggingFaceModel.DEEPSEEK_R1_1_5B_Q6,
+          HuggingFaceModel.DEEPSEEK_R1_7B_Q4,
+          HuggingFaceModel.DEEPSEEK_R1_7B_Q6,
+          HuggingFaceModel.DEEPSEEK_R1_14B_Q4,
+          HuggingFaceModel.DEEPSEEK_R1_14B_Q6)),
   PHIND_CODE_LLAMA(
       "Phind Code Llama",
       "This model is fine-tuned from Phind-CodeLlama-34B-v1 on an additional 1.5B tokens "
@@ -170,6 +184,37 @@ public enum LlamaModel {
           HuggingFaceModel.CODE_QWEN_1_5_7B_Q4_K_M,
           HuggingFaceModel.CODE_QWEN_1_5_7B_Q5_K_M,
           HuggingFaceModel.CODE_QWEN_1_5_7B_Q6_K)),
+  CODE_QWEN2_5_CODER(
+      "CodeQwen2.5 Coder", """
+          Qwen2.5-Coder is the latest series of Code-Specific Qwen large language models \
+          (formerly known as CodeQwen).
+          It brings the following improvements upon CodeQwen1.5:
+          
+          - Significantly improvements in code generation, code reasoning and code fixing. \
+          Base on the strong Qwen2.5, we scale up the training tokens into 5.5 trillion including \
+          source code, text-code grounding, Synthetic data, etc.
+          - A more comprehensive foundation for real-world applications such as Code Agents. \
+          Not only enhancing coding capabilities but also maintaining its strengths in \
+          mathematics and general competencies.
+          - Long-context Support up to 128K tokens.
+          """,
+      PromptTemplate.CODE_QWEN,
+      InfillPromptTemplate.CODE_QWEN_2_5,
+      List.of(
+          HuggingFaceModel.CODE_QWEN_2_5_1_5B_Q6_K,
+          HuggingFaceModel.CODE_QWEN_2_5_1_5B_Q8_0,
+          HuggingFaceModel.CODE_QWEN_2_5_3B_Q4_K_M,
+          HuggingFaceModel.CODE_QWEN_2_5_3B_Q6_K,
+          HuggingFaceModel.CODE_QWEN_2_5_3B_Q8_0,
+          HuggingFaceModel.CODE_QWEN_2_5_7B_Q4_K_M,
+          HuggingFaceModel.CODE_QWEN_2_5_7B_Q6_K,
+          HuggingFaceModel.CODE_QWEN_2_5_7B_Q8_0,
+          HuggingFaceModel.CODE_QWEN_2_5_14B_Q4_K_M,
+          HuggingFaceModel.CODE_QWEN_2_5_14B_Q6_K,
+          HuggingFaceModel.CODE_QWEN_2_5_14B_Q8_0,
+          HuggingFaceModel.CODE_QWEN_2_5_32B_Q4_K_M,
+          HuggingFaceModel.CODE_QWEN_2_5_32B_Q6_K,
+          HuggingFaceModel.CODE_QWEN_2_5_32B_Q8_0)),
   STABLE_CODE(
       "Stable Code Instruct", """
       stable-code-instruct-3b is a 2.7B billion parameter decoder-only language model tuned from \

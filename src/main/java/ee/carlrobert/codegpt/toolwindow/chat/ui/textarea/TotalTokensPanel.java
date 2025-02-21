@@ -1,9 +1,11 @@
 package ee.carlrobert.codegpt.toolwindow.chat.ui.textarea;
 
+import static com.intellij.openapi.editor.EditorKind.MAIN_EDITOR;
 import static java.lang.String.format;
 
 import com.intellij.icons.AllIcons.General;
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.event.EditorFactoryEvent;
 import com.intellij.openapi.editor.event.EditorFactoryListener;
@@ -12,12 +14,12 @@ import com.intellij.openapi.editor.event.SelectionListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.util.ui.JBUI;
-import ee.carlrobert.codegpt.CodeGPTKeys;
 import ee.carlrobert.codegpt.EncodingManager;
 import ee.carlrobert.codegpt.ReferencedFile;
 import ee.carlrobert.codegpt.actions.IncludeFilesInContextNotifier;
 import ee.carlrobert.codegpt.conversations.Conversation;
 import ee.carlrobert.codegpt.settings.GeneralSettings;
+import ee.carlrobert.codegpt.settings.prompts.PromptsSettings;
 import ee.carlrobert.codegpt.settings.service.ServiceType;
 import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
@@ -43,10 +45,7 @@ public class TotalTokensPanel extends JPanel {
       @Nullable String highlightedText,
       Disposable parentDisposable) {
     super(new FlowLayout(FlowLayout.LEADING, 0, 0));
-    this.totalTokensDetails = createTokenDetails(
-        conversation,
-        project.getUserData(CodeGPTKeys.SELECTED_FILES),
-        highlightedText);
+    this.totalTokensDetails = createTokenDetails(conversation, highlightedText);
     this.label = getLabel(totalTokensDetails);
 
     setBorder(JBUI.Borders.empty(4));
@@ -59,20 +58,29 @@ public class TotalTokensPanel extends JPanel {
     project.getMessageBus()
         .connect()
         .subscribe(IncludeFilesInContextNotifier.FILES_INCLUDED_IN_CONTEXT_TOPIC,
-            (IncludeFilesInContextNotifier) this::updateReferencedFilesTokens);
+            (IncludeFilesInContextNotifier) includedFiles ->
+                updateReferencedFilesTokens(
+                    includedFiles.stream().map(ReferencedFile::from).toList()));
   }
 
   private void addSelectionListeners(Disposable parentDisposable) {
     var editorFactory = EditorFactory.getInstance();
     for (var editor : editorFactory.getAllEditors()) {
-      editor.getSelectionModel().addSelectionListener(getSelectionListener());
+      addEditorSelectionListener(editor);
     }
+
     editorFactory.addEditorFactoryListener(new EditorFactoryListener() {
       @Override
       public void editorCreated(@NotNull EditorFactoryEvent event) {
-        event.getEditor().getSelectionModel().addSelectionListener(getSelectionListener());
+        addEditorSelectionListener(event.getEditor());
       }
     }, parentDisposable);
+  }
+
+  private void addEditorSelectionListener(Editor editor) {
+    if (MAIN_EDITOR.equals(editor.getEditorKind())) {
+      editor.getSelectionModel().addSelectionListener(getSelectionListener());
+    }
   }
 
   private SelectionListener getSelectionListener() {
@@ -96,13 +104,9 @@ public class TotalTokensPanel extends JPanel {
     label.setText(getLabelHtml(total));
   }
 
-  public void updateConversationTokens(int total) {
-    totalTokensDetails.setConversationTokens(total);
-    update();
-  }
-
   public void updateConversationTokens(Conversation conversation) {
-    updateConversationTokens(encodingManager.countConversationTokens(conversation));
+    totalTokensDetails.setConversationTokens(encodingManager.countConversationTokens(conversation));
+    update();
   }
 
   public void updateUserPromptTokens(String userPrompt) {
@@ -117,22 +121,17 @@ public class TotalTokensPanel extends JPanel {
 
   public void updateReferencedFilesTokens(List<ReferencedFile> includedFiles) {
     totalTokensDetails.setReferencedFilesTokens(includedFiles.stream()
-        .mapToInt(file -> encodingManager.countTokens(file.getFileContent()))
+        .mapToInt(file -> encodingManager.countTokens(file.fileContent()))
         .sum());
     update();
   }
 
   private TotalTokensDetails createTokenDetails(
       Conversation conversation,
-      List<ReferencedFile> includedFiles,
       @Nullable String highlightedText) {
-    var tokenDetails = new TotalTokensDetails(encodingManager);
+    var tokenDetails = new TotalTokensDetails(
+        encodingManager.countTokens(PromptsSettings.getSelectedPersonaSystemPrompt()));
     tokenDetails.setConversationTokens(encodingManager.countConversationTokens(conversation));
-    if (includedFiles != null) {
-      tokenDetails.setReferencedFilesTokens(includedFiles.stream()
-          .mapToInt(file -> encodingManager.countTokens(file.getFileContent()))
-          .sum());
-    }
     if (highlightedText != null) {
       tokenDetails.setHighlightedTokens(encodingManager.countTokens(highlightedText));
     }
@@ -152,7 +151,7 @@ public class TotalTokensPanel extends JPanel {
             "Referenced Files Tokens", totalTokensDetails.getReferencedFilesTokens()))
             .entrySet().stream()
             .map(entry -> format(
-                "<p style=\"margin: 0;\"><small>%s: <strong>%d</strong></small></p>",
+                "<p style=\"margin: 0; padding: 0;\"><small>%s: <strong>%d</strong></small></p>",
                 entry.getKey(),
                 entry.getValue()))
             .collect(Collectors.joining());
@@ -165,14 +164,16 @@ public class TotalTokensPanel extends JPanel {
   private String getIconToolTipText(String html) {
     if (!GeneralSettings.isSelected(ServiceType.OPENAI)) {
       return """
-          <html
-          <p style="margin: 4px 0;">
+          <html>
+          <body style="margin: 0; padding: 0;">
+          %s
+          <p style="margin-top: 8px;">
           <small>
-          <strong>ⓘ Keep in mind that the output values might vary across different
-          large language models due to variations in their encoding methods.</strong>
+          <strong>Note:</strong> Output values might vary across different large language models
+          due to variations in their encoding methods.
           </small>
           </p>
-          %s
+          </body>
           </html>""".formatted(html);
     }
     return "<html" + html + "</html>";

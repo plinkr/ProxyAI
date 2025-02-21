@@ -42,7 +42,7 @@ intellij {
   pluginName.set(properties("pluginName"))
   version.set(properties("platformVersion"))
   type.set(properties("platformType"))
-  plugins.set(listOf("java", "PythonCore:241.14494.240", "Git4Idea"))
+  plugins.set(listOf("java", "PythonCore:241.14494.240", "Git4Idea", "org.jetbrains.kotlin"))
 }
 
 changelog {
@@ -62,6 +62,8 @@ dependencies {
     // vulnerable transitive dependency
     exclude(group = "org.jsoup", module = "jsoup")
   }
+  implementation(kotlin("stdlib"))
+  implementation(kotlin("reflect"))
   implementation(libs.jsoup)
   implementation(libs.commons.text)
   implementation(libs.jtokkit)
@@ -71,12 +73,6 @@ dependencies {
 tasks.register<Exec>("updateSubmodules") {
   workingDir(rootDir)
   commandLine("git", "submodule", "update", "--init", "--recursive")
-}
-
-tasks.register<Copy>("copyLlamaSubmodule") {
-  dependsOn("updateSubmodules")
-  from(layout.projectDirectory.file("src/main/cpp/llama.cpp"))
-  into(layout.buildDirectory.dir("idea-sandbox/plugins/CodeGPT/llama.cpp"))
 }
 
 tasks {
@@ -126,7 +122,10 @@ tasks {
 
   prepareSandbox {
     enabled = true
-    dependsOn("copyLlamaSubmodule")
+    dependsOn("updateSubmodules")
+    from("src/main/cpp/llama.cpp") {
+      into("CodeGPT/llama.cpp")
+    }
   }
 
   signPlugin {

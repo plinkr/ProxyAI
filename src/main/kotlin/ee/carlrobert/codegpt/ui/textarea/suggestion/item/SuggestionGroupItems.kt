@@ -11,12 +11,15 @@ import ee.carlrobert.codegpt.CodeGPTBundle
 import ee.carlrobert.codegpt.Icons
 import ee.carlrobert.codegpt.settings.GeneralSettings
 import ee.carlrobert.codegpt.settings.documentation.DocumentationSettings
-import ee.carlrobert.codegpt.settings.persona.PersonaDetails
-import ee.carlrobert.codegpt.settings.persona.PersonaSettings
+import ee.carlrobert.codegpt.settings.prompts.PersonaDetails
+import ee.carlrobert.codegpt.settings.prompts.PromptsSettings
 import ee.carlrobert.codegpt.settings.service.ServiceType
 import ee.carlrobert.codegpt.ui.DocumentationDetails
+import ee.carlrobert.codegpt.ui.textarea.header.tag.DocumentationTagDetails
+import ee.carlrobert.codegpt.ui.textarea.header.tag.FileTagDetails
+import ee.carlrobert.codegpt.ui.textarea.header.tag.PersonaTagDetails
+import ee.carlrobert.codegpt.ui.textarea.header.tag.TagUtil
 import ee.carlrobert.codegpt.util.GitUtil
-import ee.carlrobert.codegpt.util.ResourceUtil.getDefaultPersonas
 import ee.carlrobert.codegpt.util.file.FileUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,7 +43,12 @@ class FileSuggestionGroupItem(private val project: Project) : SuggestionGroupIte
         return FileUtil.searchProjectFiles(project, searchText).toFileSuggestions()
     }
 
-    private fun Iterable<VirtualFile>.toFileSuggestions() = take(10).map { FileActionItem(it) }
+    private fun Iterable<VirtualFile>.toFileSuggestions(): List<SuggestionActionItem> {
+        val selectedFileTags = TagUtil.getExistingTags(project, FileTagDetails::class.java)
+        return filter { file -> selectedFileTags.none { it.virtualFile == file } }
+            .take(10)
+            .map { FileActionItem(it) } + IncludeOpenFilesActionItem()
+    }
 }
 
 class FolderSuggestionGroupItem(private val project: Project) : SuggestionGroupItem {
@@ -79,17 +87,17 @@ class FolderSuggestionGroupItem(private val project: Project) : SuggestionGroupI
     }
 }
 
-class PersonaSuggestionGroupItem : SuggestionGroupItem {
+class PersonaSuggestionGroupItem(private val project: Project) : SuggestionGroupItem {
     override val displayName: String = CodeGPTBundle.get("suggestionGroupItem.personas.displayName")
     override val icon = AllIcons.General.User
+    override val enabled: Boolean
+        get() = !TagUtil.isTagTypePresent(project, PersonaTagDetails::class.java)
 
     override suspend fun getSuggestions(searchText: String?): List<SuggestionActionItem> {
-        val userCreatedPersonas = service<PersonaSettings>().state.userCreatedPersonas
+        return service<PromptsSettings>().state.personas.prompts
             .map {
                 PersonaDetails(it.id, it.name ?: "Unknown", it.instructions ?: "Unknown")
             }
-            .toMutableList()
-        return (userCreatedPersonas + getDefaultPersonas())
             .filter {
                 searchText.isNullOrEmpty() || it.name.contains(searchText, true)
             }
@@ -98,10 +106,18 @@ class PersonaSuggestionGroupItem : SuggestionGroupItem {
     }
 }
 
-class DocumentationSuggestionGroupItem : SuggestionGroupItem {
+class DocumentationSuggestionGroupItem(private val project: Project) : SuggestionGroupItem {
     override val displayName: String = CodeGPTBundle.get("suggestionGroupItem.docs.displayName")
     override val icon = AllIcons.Toolwindows.Documentation
-    override val enabled = GeneralSettings.getSelectedService() == ServiceType.CODEGPT
+    override val enabled: Boolean
+        get() = enabled()
+
+    fun enabled(): Boolean {
+        if (GeneralSettings.getSelectedService() != ServiceType.CODEGPT) {
+            return false
+        }
+        return !TagUtil.isTagTypePresent(project, DocumentationTagDetails::class.java)
+    }
 
     override suspend fun getSuggestions(searchText: String?): List<SuggestionActionItem> =
         service<DocumentationSettings>().state.documentations
@@ -138,9 +154,7 @@ class GitSuggestionGroupItem(private val project: Project) : SuggestionGroupItem
             GitUtil.getProjectRepository(project)?.let {
                 GitUtil.getAllRecentCommits(project, it, searchText)
                     .take(10)
-                    .map { commit ->
-                        GitCommitActionItem(project, commit)
-                    }
+                    .map { commit -> GitCommitActionItem(commit) } + IncludeCurrentGitChangesActionItem()
             } ?: emptyList()
         }
     }

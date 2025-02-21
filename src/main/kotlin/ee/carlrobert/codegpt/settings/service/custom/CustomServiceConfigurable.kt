@@ -1,40 +1,51 @@
 package ee.carlrobert.codegpt.settings.service.custom
 
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
-import ee.carlrobert.codegpt.credentials.CredentialsStore.CredentialKey.CUSTOM_SERVICE_API_KEY
-import ee.carlrobert.codegpt.credentials.CredentialsStore.getCredential
-import ee.carlrobert.codegpt.credentials.CredentialsStore.setCredential
-import ee.carlrobert.codegpt.settings.GeneralSettings
-import ee.carlrobert.codegpt.settings.service.ServiceType
-import ee.carlrobert.codegpt.settings.service.custom.form.CustomServiceForm
+import ee.carlrobert.codegpt.settings.service.custom.form.CustomServiceListForm
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import javax.swing.JComponent
+import kotlin.coroutines.CoroutineContext
+
+object SwingDispatcher : CoroutineDispatcher() {
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        runInEdt {
+            block.run()
+        }
+    }
+}
 
 class CustomServiceConfigurable : Configurable {
 
-    private lateinit var component: CustomServiceForm
+    private val coroutineScope = CoroutineScope(SupervisorJob() + SwingDispatcher)
+    private lateinit var component: CustomServiceListForm
 
     override fun getDisplayName(): String {
         return "CodeGPT: Custom Service"
     }
 
     override fun createComponent(): JComponent {
-        component = CustomServiceForm()
+        component = CustomServiceListForm(service<CustomServicesSettings>(), coroutineScope)
         return component.getForm()
     }
 
     override fun isModified(): Boolean {
         return component.isModified()
-                || component.getApiKey() != getCredential(CUSTOM_SERVICE_API_KEY)
     }
 
     override fun apply() {
-        setCredential(CUSTOM_SERVICE_API_KEY, component.getApiKey())
-        service<GeneralSettings>().state.selectedService = ServiceType.CUSTOM_OPENAI
         component.applyChanges()
     }
 
     override fun reset() {
         component.resetForm()
+    }
+
+    override fun disposeUIResources() {
+        coroutineScope.cancel()
     }
 }

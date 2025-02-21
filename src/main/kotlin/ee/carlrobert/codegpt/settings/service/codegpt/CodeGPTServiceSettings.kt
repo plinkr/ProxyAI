@@ -13,6 +13,7 @@ class CodeGPTServiceSettings :
 class CodeGPTServiceSettingsState : BaseState() {
     var chatCompletionSettings by property(CodeGPTServiceChatCompletionSettingsState())
     var codeCompletionSettings by property(CodeGPTServiceCodeCompletionSettingsState())
+    var codeAssistantEnabled by property(true)
 }
 
 class CodeGPTServiceChatCompletionSettingsState : BaseState() {
@@ -20,6 +21,6 @@ class CodeGPTServiceChatCompletionSettingsState : BaseState() {
 }
 
 class CodeGPTServiceCodeCompletionSettingsState : BaseState() {
-    var codeCompletionsEnabled by property(false)
-    var model by string("starcoder-7b")
+    var codeCompletionsEnabled by property(true)
+    var model by string("codestral")
 }

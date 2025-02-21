@@ -12,12 +12,11 @@ import com.intellij.openapi.compiler.CompileContext;
 import com.intellij.openapi.compiler.CompilerMessage;
 import com.intellij.openapi.compiler.CompilerMessageCategory;
 import com.intellij.openapi.project.Project;
-import ee.carlrobert.codegpt.completions.CompletionRequestProvider;
+import ee.carlrobert.codegpt.completions.CompletionRequestUtil;
 import ee.carlrobert.codegpt.conversations.message.Message;
 import ee.carlrobert.codegpt.settings.configuration.ConfigurationSettings;
 import ee.carlrobert.codegpt.toolwindow.chat.ChatToolWindowContentManager;
 import ee.carlrobert.codegpt.ui.OverlayUtil;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -66,10 +65,9 @@ public class ProjectCompilationStatusListener implements CompilationStatusListen
 
     var message = new Message("Fix the following compile errors:\n\n" + prompt);
     message.setReferencedFilePaths(errorMapping.keySet().stream()
-        .map(ReferencedFile::getFilePath)
+        .map(ReferencedFile::filePath)
         .toList());
-    message.setUserMessage(message.getPrompt());
-    message.setPrompt(CompletionRequestProvider.getPromptWithContext(
+    message.setPrompt(CompletionRequestUtil.getPromptWithContext(
         new ArrayList<>(errorMapping.keySet()),
         prompt));
     return message;
@@ -78,7 +76,7 @@ public class ProjectCompilationStatusListener implements CompilationStatusListen
   private HashMap<ReferencedFile, List<String>> getErrorMapping(CompileContext compileContext) {
     var errorMapping = new HashMap<ReferencedFile, List<String>>();
     for (var compilerMessage : compileContext.getMessages(CompilerMessageCategory.ERROR)) {
-      var key = new ReferencedFile(new File(compilerMessage.getVirtualFile().getPath()));
+      var key = ReferencedFile.from(compilerMessage.getVirtualFile());
       var prevValue = errorMapping.get(key);
       if (prevValue == null) {
         prevValue = new ArrayList<>();

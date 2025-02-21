@@ -61,9 +61,13 @@ public final class EncodingManager {
   }
 
   public int countTokens(String text) {
+    if (text == null || text.isEmpty()) {
+      return 0;
+    }
+
     try {
       // #444: Cl100kParser.split() throws AssertionError "Input is not UTF-8: "
-      return encoding.countTokens(text);
+      return encoding.countTokens(text.replaceAll("<|", "").replaceAll("|>", ""));
     } catch (Exception | Error ex) {
       LOG.warn("Could not count tokens for: " + text, ex);
       return 0;

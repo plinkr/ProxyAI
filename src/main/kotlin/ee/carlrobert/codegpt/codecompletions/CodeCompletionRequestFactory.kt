@@ -3,13 +3,12 @@ package ee.carlrobert.codegpt.codecompletions
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.intellij.openapi.components.service
-import ee.carlrobert.codegpt.EncodingManager
 import ee.carlrobert.codegpt.completions.llama.LlamaModel
 import ee.carlrobert.codegpt.credentials.CredentialsStore.CredentialKey
 import ee.carlrobert.codegpt.credentials.CredentialsStore.getCredential
-import ee.carlrobert.codegpt.settings.configuration.Placeholder.*
+import ee.carlrobert.codegpt.settings.Placeholder.*
 import ee.carlrobert.codegpt.settings.service.codegpt.CodeGPTServiceSettings
-import ee.carlrobert.codegpt.settings.service.custom.CustomServiceSettings
+import ee.carlrobert.codegpt.settings.service.custom.CustomServicesSettings
 import ee.carlrobert.codegpt.settings.service.llama.LlamaSettings
 import ee.carlrobert.codegpt.settings.service.llama.LlamaSettingsState
 import ee.carlrobert.codegpt.settings.service.ollama.OllamaSettings
@@ -29,33 +28,34 @@ object CodeCompletionRequestFactory {
 
     @JvmStatic
     fun buildCodeGPTRequest(details: InfillRequest): CodeCompletionRequest {
-        val settings = service<CodeGPTServiceSettings>().state.codeCompletionSettings
         return CodeCompletionRequest.Builder()
-            .setModel(settings.model)
+            .setModel(service<CodeGPTServiceSettings>().state.codeCompletionSettings.model)
             .setPrefix(details.prefix)
             .setSuffix(details.suffix)
             .setFileExtension(details.fileDetails?.fileExtension)
             .setFileContent(details.fileDetails?.fileContent)
-            .setStagedDiff(details.vcsDetails?.stagedDiff)
-            .setUnstagedDiff(details.vcsDetails?.unstagedDiff)
+            .setCursorOffset(details.caretOffset)
+            .setStop(details.stopTokens.ifEmpty { null })
             .build()
     }
 
     @JvmStatic
     fun buildOpenAIRequest(details: InfillRequest): OpenAITextCompletionRequest {
-        val (prefix, suffix) = getCompletionContext(details)
-        return OpenAITextCompletionRequest.Builder(prefix)
-            .setSuffix(suffix)
+        return OpenAITextCompletionRequest.Builder(details.prefix)
+            .setSuffix(details.suffix)
             .setStream(true)
             .setMaxTokens(MAX_TOKENS)
-            .setTemperature(0.4)
+            .setTemperature(0.0)
+            .setPresencePenalty(0.0)
+            .setStop(details.stopTokens.ifEmpty { null })
             .build()
     }
 
     @JvmStatic
     fun buildCustomRequest(details: InfillRequest): Request {
-        val settings = service<CustomServiceSettings>().state.codeCompletionSettings
-        val credential = getCredential(CredentialKey.CUSTOM_SERVICE_API_KEY)
+        val activeService = service<CustomServicesSettings>().state.active
+        val settings = activeService.codeCompletionSettings
+        val credential = getCredential(CredentialKey.CustomServiceApiKey(activeService.name.orEmpty()))
         return buildCustomRequest(
             details,
             settings.url!!,
@@ -104,24 +104,40 @@ object CodeCompletionRequestFactory {
         val settings = LlamaSettings.getCurrentState()
         val promptTemplate = getLlamaInfillPromptTemplate(settings)
         val prompt = promptTemplate.buildPrompt(details)
+        val stopTokens = buildList {
+            if (promptTemplate.stopTokens != null) addAll(promptTemplate.stopTokens)
+            if (details.stopTokens.isNotEmpty()) addAll(details.stopTokens)
+        }.ifEmpty { null }
+
         return LlamaCompletionRequest.Builder(prompt)
             .setN_predict(MAX_TOKENS)
             .setStream(true)
-            .setTemperature(0.4)
-            .setStop(promptTemplate.stopTokens)
+            .setTemperature(0.0)
+            .setStop(stopTokens)
             .build()
     }
 
     fun buildOllamaRequest(details: InfillRequest): OllamaCompletionRequest {
         val settings = service<OllamaSettings>().state
+        val stopTokens = buildList {
+            if (details.stopTokens.isNotEmpty()) addAll(details.stopTokens)
+        }.toMutableList()
+        val prompt = if (settings.fimOverride) {
+            settings.fimTemplate.stopTokens?.let { stopTokens.addAll(it) }
+            settings.fimTemplate.buildPrompt(details)
+        } else {
+            details.prefix
+        }
+
         return OllamaCompletionRequest.Builder(
             settings.model,
-            settings.fimTemplate.buildPrompt(details)
+            prompt
         )
+            .setSuffix(if (settings.fimOverride) null else details.suffix)
             .setStream(true)
             .setOptions(
                 OllamaParameters.Builder()
-                    .stop(settings.fimTemplate.stopTokens)
+                    .stop(stopTokens.ifEmpty { null })
                     .numPredict(MAX_TOKENS)
                     .temperature(0.4)
                     .build()
@@ -147,41 +163,15 @@ object CodeCompletionRequestFactory {
     ): Any {
         if (value !is String) return value
 
-        val (prefix, suffix) = getCompletionContext(details)
         return when (value) {
             FIM_PROMPT.code -> template.buildPrompt(details)
-            PREFIX.code -> prefix
-            SUFFIX.code -> suffix
+            PREFIX.code -> details.prefix
+            SUFFIX.code -> details.suffix
             else -> {
                 return value.takeIf { it.contains(PREFIX.code) || it.contains(SUFFIX.code) }
-                    ?.replace(PREFIX.code, prefix)
-                    ?.replace(SUFFIX.code, suffix) ?: value
+                    ?.replace(PREFIX.code, details.prefix)
+                    ?.replace(SUFFIX.code, details.suffix) ?: value
             }
         }
-    }
-
-    private fun getCompletionContext(request: InfillRequest): Pair<String, String> {
-        val encodingManager = EncodingManager.getInstance()
-        val truncatedPrefix = encodingManager.truncateText(request.prefix, 128, false)
-        val truncatedSuffix = encodingManager.truncateText(request.suffix, 128, true)
-        val vcsDetails = request.vcsDetails ?: return truncatedPrefix to truncatedSuffix
-
-        val stagedDiff = if (vcsDetails.stagedDiff != null)
-            encodingManager.truncateText(vcsDetails.stagedDiff, 200, true)
-        else
-            ""
-        val unstagedDiff = if (vcsDetails.unstagedDiff != null)
-            encodingManager.truncateText(vcsDetails.unstagedDiff, 200, true)
-        else
-            ""
-        val prompt: String = if (vcsDetails.stagedDiff != null)
-            """
-            ${"/*\n${stagedDiff + unstagedDiff}\n\n*/"}
-            $truncatedPrefix
-            """.trimIndent()
-        else
-            truncatedPrefix
-
-        return prompt to truncatedSuffix
     }
 }

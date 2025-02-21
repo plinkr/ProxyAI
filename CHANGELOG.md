@@ -6,11 +6,276 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.16.3-241.1] - 2025-02-11
+
 ### Added
 
-- New `o1-preview` and `o1-mini` models for CodeGPT users 
+- Support for latest gemini models [#860](https://github.com/carlrobertoh/CodeGPT/issues/860)
+- Option to configure multiple Custom OpenAI providers [#859](https://github.com/carlrobertoh/CodeGPT/issues/859)
 
-## [2.11.1-241.1] - 2024-09-12
+### Fixed
+
+- Statusbar spinner when request fails
+- Do not include duplicate context files
+- Send editor's content when files are unsaved [#871](https://github.com/carlrobertoh/CodeGPT/issues/871)
+
+## [2.16.2-241.1] - 2025-02-06
+
+### Fixed
+
+- Tool window initialization race condition [#856](https://github.com/carlrobertoh/CodeGPT/issues/856)
+- Invalid OpenAI model state [#842](https://github.com/carlrobertoh/CodeGPT/issues/842)
+- Tag panel vertical alignment using GridBagLayout [#857](https://github.com/carlrobertoh/CodeGPT/issues/857)
+
+## [2.16.1-241.1] - 2025-02-04
+
+### Added
+
+- `o3-mini` model (CodeGPT, OpenAI)
+- Support for code editing and commit message generation with Deepseek R1 model [#835](https://github.com/carlrobertoh/CodeGPT/issues/835)
+- Kotlin dependency analyzer for code completions [#829](https://github.com/carlrobertoh/CodeGPT/pull/829)
+- Status toolbar completion progress for all core actions
+- Support for disabling system prompts
+- Avatar images for registered CodeGPT users
+
+### Fixed
+
+- Tool window content initialization anomalies
+- Deepseek R1 thought process parsing
+- Missing selection in final prompt [#844](https://github.com/carlrobertoh/CodeGPT/issues/844)
+
+## [2.16.0-241.1] - 2025-01-28
+
+### Added
+
+- DeepSeek V3 and R1 models (CodeGPT, Ollama and llama.cpp)
+- New 'Include Current Changes' chat action
+
+### Improved
+
+- Chat text input actions UI/UX
+
+## [2.15.2-241.1] - 2025-01-13
+
+### Added
+
+- Example code assistant guideline in the prompt.
+- Support for opening all code assistant changes in full mode.
+- Additional commit dialog actions:
+  - Generate Message (no functional changes).
+  - Generate Message with Additional Input: Adds support for additional input in the prompt.
+  - Review Changes: Creates a new chat session and asks CodeGPT to review your changes and suggest improvements.
+
+### Fixed
+
+- Inconsistencies in the model combobox title when changing between tabs [#814](https://github.com/carlrobertoh/CodeGPT/issues/814).
+
+## [2.15.1-241.1] - 2025-01-07
+
+### Added
+
+- Code Assistant predictions for Paste action
+- Prioritization and ordering of predictions closest to cursor position
+
+### Fixed
+
+- Code Assistant custom accept shortcut and missing keymap labels
+
+## [2.15.0-241.1] - 2024-12-30
+
+### Added
+
+- Code Assistant: A new feature that suggests edits throughout the file [[Read More](https://www.codegpt.ee/blog/introducing-code-assistant)]
+- 'Include Open Files' chat action item [#796](https://github.com/carlrobertoh/CodeGPT/issues/796)
+
+## [2.14.3-241.1] - 2024-12-17
+
+### Added
+
+- Support for copying user and response messages in their original format [#791](https://github.com/carlrobertoh/CodeGPT/issues/791)
+- Right-click popup menu for response messages
+
+### Fixed
+
+- Escaped code response characters [#169](https://github.com/carlrobertoh/CodeGPT/issues/169), [#437](https://github.com/carlrobertoh/CodeGPT/issues/437)
+- Model value change for empty conversations
+- Order of Custom OpenAI applied settings [#797](https://github.com/carlrobertoh/CodeGPT/issues/797)
+
+## [2.14.2-241.1] - 2024-12-12
+
+### Added
+
+- Partial code completion acceptance
+
+## [2.14.1-241.1] - 2024-12-06
+
+### Fixed
+
+- Response streaming for o1 models
+- IDE error caused by credential validation in EDT
+- Submission handling when current response is ongoing
+
+## [2.14.0-241.1] - 2024-12-04
+
+### Added
+
+- Support for multi-line code completions
+- Recent Qwen 2.5 Coder models (llama.cpp)
+- Codestral as default code model (CodeGPT)
+
+### Fixed
+
+- NPE caused by lookup element sorter
+
+### Removed
+
+- StarCoder 7B model (CodeGPT)
+
+## [2.13.1-241.1] - 2024-11-27
+
+### Fixed
+
+- NPE when using IDE internal completions [#777](https://github.com/carlrobertoh/CodeGPT/issues/777)
+- Inline completion triggering when editor has active lookup
+
+## [2.13.0-241.1] - 2024-11-25
+
+### Added
+
+- Single standalone view for prompt configuration
+- Codestral model for code completion (CodeGPT)
+
+### Fixed
+
+- Git diff logic for commit message generation
+
+## [2.12.5-241.1] - 2024-11-18
+
+### Added
+
+- Option to explain commits from VCS log tree [#688](https://github.com/carlrobertoh/CodeGPT/issues/688)
+
+### Fixed
+
+- Chat response streaming for messages received faster than polling rate [#757](https://github.com/carlrobertoh/CodeGPT/issues/757)
+
+### Improved
+
+- Default CodeGPT prompt instructions
+
+## [2.12.4-241.1] - 2024-11-14
+
+### Added
+
+- Qwen 2.5 Coder model for chat and code completion (CodeGPT)
+
+### Fixed
+
+- Image popup notification condition fix [#711](https://github.com/carlrobertoh/CodeGPT/issues/711) 
+
+### Improved
+
+- Code completion user experience
+  - Display and apply completions line by line
+  - Make suggestion available as soon as new line is available
+  - Add logic for whitespace adjustments
+  - Post-insertion logic, i.e., move cursor to the beginning of next completion
+
+## [2.12.3-241.1] - 2024-11-07
+
+### Fixed
+
+- Files not persisting between messages in same session
+
+## [2.12.2-241.1] - 2024-11-04
+
+### Fixed
+
+- Ollama chat completion streaming [#744](https://github.com/carlrobertoh/CodeGPT/issues/744)
+- Non-stream chat completions error handling (CodeGPT, OpenAI) [#746](https://github.com/carlrobertoh/CodeGPT/issues/746)
+- Prompt text component height issues [#747](https://github.com/carlrobertoh/CodeGPT/issues/747)
+- Endless loading when persona name or instructions are null [#748](https://github.com/carlrobertoh/CodeGPT/issues/748)
+
+## [2.12.1-241.1] - 2024-11-01
+
+### Added
+
+- Gemini 1.5 Pro model (CodeGPT)
+
+### Fixed
+
+- Code completion state when session contains active completion
+
+### Removed
+
+- StarCoder 16B model (CodeGPT)
+
+## [2.12.0-241.1] - 2024-10-29
+
+### Added
+
+- 'Auto Apply' feature for instant AI-suggested code updates [#743](https://github.com/carlrobertoh/CodeGPT/issues/743) (CodeGPT)
+
+### Fixed
+
+- Code completion enabled/disabled state
+- Total token calculation for highlighted texts
+
+## [2.11.7-241.1] - 2024-10-18
+
+### Fixed
+
+- Edit Code request building [#737](https://github.com/carlrobertoh/CodeGPT/issues/737) (OpenAI)
+- Chat UI performance issues
+- Minor issues related to git repository lookup
+
+## [2.11.6-241.1] - 2024-10-15
+
+### Fixed
+
+- High CPU usage [#716](https://github.com/carlrobertoh/CodeGPT/issues/716)
+- NPE on suggestion actions when no files are opened in editor [#725](https://github.com/carlrobertoh/CodeGPT/issues/725)
+- Inconsistent text rendering in the chat tool window
+
+## [2.11.5-241.1] - 2024-10-10
+
+### Added
+
+- Support high context limits (up to 200k tokens) via RAG when chatting with files (CodeGPT)
+- Gemini 1.5 Pro model (Google)
+- Legacy response support for text completions in code completions (Custom OpenAI)
+
+### Fixed
+
+- Chat UI threading issues [#730](https://github.com/carlrobertoh/CodeGPT/issues/730)
+
+## [2.11.4-241.1] - 2024-10-01
+
+### Added
+
+- Qwen 2.5 (72B) and o1 models (CodeGPT, OpenAI)
+- Free limited access to SOTA models (CodeGPT)
+
+## [2.11.3-241.1] - 2024-09-25
+
+### Fixed
+
+- Anthropic (Claude) chat requests [#707](https://github.com/carlrobertoh/CodeGPT/issues/707)
+
+## [2.11.2-223] - 2024-09-24
+
+### Added
+
+- Edit Code and Name Suggestions feature support for all providers
+- Qwen 2.5 Coder models and prompt templates
+
+### Fixed
+
+- Model popup submenu auto-hover [#681](https://github.com/carlrobertoh/CodeGPT/issues/681)
+- Prompt text field newline creation [#694](https://github.com/carlrobertoh/CodeGPT/issues/694)
+- Prompt text field theme issues [#701](https://github.com/carlrobertoh/CodeGPT/issues/701)
+
+## [2.11.1-223] - 2024-09-12
 
 ### Added
 
@@ -30,7 +295,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Model combobox menu UI/UX by extracting the providers into standalone subgroups [#681](https://github.com/carlrobertoh/CodeGPT/pull/681)
 - Prompt text field inlay rendering
 
-## [2.11.0-241.1] - 2024-09-05
+## [2.11.0-223] - 2024-09-05
 
 ### Added
 
@@ -40,8 +305,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Insert at Caret: Inserts the generated code at the exact location of the caret in the main editor
 - Vision support for Azure models
 - General improvements to code completions, including:
-  - Proper streaming support
-  - Git context integration
+    - Proper streaming support
+    - Git context integration
 
 ### Fixed
 
@@ -49,7 +314,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenRouter default template for custom OpenAI provider
 - Ollama streaming requests
 
-## [2.10.2-241.1] - 2024-08-23
+## [2.10.2-223] - 2024-08-23
 
 ### Added
 
@@ -60,13 +325,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code completion prompt creation from placeholders
 - Prompt text field inlay offset and up/down key events
 
-## [2.10.1-241.1] - 2024-08-20
+## [2.10.1-223] - 2024-08-20
 
 ### Fixed
 
 - Codestral Infill templates for code completion in llama.cpp [#667](https://github.com/carlrobertoh/CodeGPT/pull/667)
 
-## [2.10.0-233] - 2024-08-19
+## [2.10.0-223] - 2024-08-19
 
 ### Added
 
@@ -83,7 +348,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - IDE freezes caused by long running file search queries [#652](https://github.com/carlrobertoh/CodeGPT/pull/652)
 
-## [2.9.0-241.1] - 2024-08-03
+## [2.9.0-223] - 2024-08-03
 
 ### Added
 
@@ -96,7 +361,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for attaching folders, allowing all files within the folder to be added to your current chat session.
 - Optimized the chat user interface for better performance. We noticed that for faster models, the inference speed didn't match what was being rendered on the screen.
 
-## [2.8.5-241.1] - 2024-07-24
+## [2.8.5-223] - 2024-07-24
 
 ### Added
 
@@ -106,7 +371,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Wrong line separators exception during code completion [(#637)](https://github.com/carlrobertoh/CodeGPT/issues/637)
 
-## [2.8.4-241.1] - 2024-07-19
+## [2.8.4-223] - 2024-07-19
 
 ### Added
 
@@ -119,11 +384,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Numeric values in Custom providers' headers section ([#619](https://github.com/carlrobertoh/CodeGPT/issues/619))
 - Ollama settings sync ([#616](https://github.com/carlrobertoh/CodeGPT/issues/616))
 
-## [2.8.3-241.1] - 2024-07-15
+## [2.8.3-223] - 2024-07-15
 
 ### Added
 
-- Debouncer for code completions
 - Enter key shortcut for Fast Edit submission (#602)
 
 ### Fixed
@@ -132,7 +396,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace code behaviour (#614)
 - Wrong line separators on Windows (#605)
 
-## [2.8.2-241.1] - 2024-07-01
+## [2.8.2-233] - 2024-07-01
 
 ### Added
 
@@ -147,7 +411,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - You.com provider support
 
-## [2.8.1-241.1] - 2024-06-21
+## [2.8.1-223] - 2024-06-21
 
 ### Added
 
@@ -159,7 +423,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Model re-selection after refresh (Ollama)
 - Commit message placeholders
 
-## [2.8.0-241.1] - 2024-06-06
+## [2.8.0-223] - 2024-06-06
 
 ### Added
 
@@ -175,7 +439,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove trailing slashes from URL text fields (#579)
 - Disable code completions by default
 
-## [2.7.1-241] - 2024-05-15
+## [2.7.1-223] - 2024-05-15
 
 ### Fixed
 
@@ -185,7 +449,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Display a model name when starting the llama.cpp server (#546)
 
-## [2.7.0-241] - 2024-05-14
+## [2.7.0-223] - 2024-05-14
 
 ### Added
 
@@ -210,7 +474,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `max_tokens` configuration for code completions (will be handled internally)
 
-## [2.6.3-241] - 2024-04-22
+## [2.6.3-223] - 2024-04-22
 
 ### Added
 
@@ -225,13 +489,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - High CPU usage during new files check (#474)
 - Persistence of credentials back into the PasswordSafe (#465)
 
-## [2.6.2-241] - 2024-04-15
+## [2.6.2-222] - 2024-04-15
 
 ### Fixed
 
 - Text rendering anomalies upon streaming
 
-## [2.6.1-241] - 2024-04-12
+## [2.6.1-222] - 2024-04-12
 
 ### Fixed
 
@@ -240,30 +504,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Random IDE crashes caused by tree-sitter (#452, #446)
 - Azure base url creation (#449)
 
-## [2.6.0-241] - 2024-04-08
+## [2.6.0-222] - 2024-04-10
 
 ### Added
 
 - Vision support (image understanding) for OpenAI GPT-4 and Anthropic Claude models
 - Total token panel for all providers
-- Support for configuring code completions via settings
-- Support for multi-line partial completion acceptance
 - Autofocus for UserTextArea when the tool window is visible
 
 ### Fixed
 
 - Git commit message generation
-- Fixed several UI/UX issues related to code completions for IDE versions starting from 233 
 - Error when adding a single file to the context
 - Several IntelliJ platform warnings
 
 ### Removed
 
-- Azure custom configuration (use OpenAI-compatible service to override the default configuration) 
-
-### Changed
-
-- Supported minimum IDE build from 213 to 222
+- Azure custom configuration (use OpenAI-compatible service to override the default configuration)
 
 ## [2.5.1] - 2024-03-14
 
@@ -651,26 +908,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `OPENAI_API_KEY` persistence, key is saved in the OS password safe from now on
 
-[Unreleased]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.1-241.1...HEAD
-[2.11.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.0-241.1...v2.11.1-241.1
-[2.11.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.2-241.1...v2.11.0-241.1
-[2.10.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.1-241.1...v2.10.2-241.1
-[2.10.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.0-233...v2.10.1-241.1
-[2.10.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.9.0-241.1...v2.10.0-241.1
-[2.10.0-233]: https://github.com/carlrobertoh/CodeGPT/compare/v2.9.0-241.1...v2.10.0-233
-[2.9.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.5-241.1...v2.9.0-241.1
-[2.8.5-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.4-241.1...v2.8.5-241.1
-[2.8.4-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.3-241.1...v2.8.4-241.1
-[2.8.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.2-241.1...v2.8.3-241.1
-[2.8.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.1-241.1...v2.8.2-241.1
-[2.8.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.0-241.1...v2.8.1-241.1
-[2.8.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.7.1-241...v2.8.0-241.1
-[2.7.1-241]: https://github.com/carlrobertoh/CodeGPT/compare/v2.7.0-241...v2.7.1-241
-[2.7.0-241]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.3-241...v2.7.0-241
-[2.6.3-241]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.2-241...v2.6.3-241
-[2.6.2-241]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.1-241...v2.6.2-241
-[2.6.1-241]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.0-241...v2.6.1-241
-[2.6.0-241]: https://github.com/carlrobertoh/CodeGPT/compare/v2.5.1...v2.6.0-241
+[Unreleased]: https://github.com/carlrobertoh/CodeGPT/compare/v2.16.3-241.1...HEAD
+[2.16.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.16.2-241.1...v2.16.3-241.1
+[2.16.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.16.1-241.1...v2.16.2-241.1
+[2.16.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.16.0-241.1...v2.16.1-241.1
+[2.16.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.15.2-241.1...v2.16.0-241.1
+[2.15.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.15.1-241.1...v2.15.2-241.1
+[2.15.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.15.0-241.1...v2.15.1-241.1
+[2.15.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.14.3-241.1...v2.15.0-241.1
+[2.14.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.14.2-241.1...v2.14.3-241.1
+[2.14.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.14.1-241.1...v2.14.2-241.1
+[2.14.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.14.0-241.1...v2.14.1-241.1
+[2.14.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.13.1-241.1...v2.14.0-241.1
+[2.13.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.13.0-241.1...v2.13.1-241.1
+[2.13.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.5-241.1...v2.13.0-241.1
+[2.12.5-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.4-241.1...v2.12.5-241.1
+[2.12.4-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.3-241.1...v2.12.4-241.1
+[2.12.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.2-241.1...v2.12.3-241.1
+[2.12.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.1-241.1...v2.12.2-241.1
+[2.12.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.0-241.1...v2.12.1-241.1
+[2.12.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.7-241.1...v2.12.0-241.1
+[2.11.7-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.6-241.1...v2.11.7-241.1
+[2.11.6-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.5-241.1...v2.11.6-241.1
+[2.11.5-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.4-241.1...v2.11.5-241.1
+[2.11.4-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.3-241.1...v2.11.4-241.1
+[2.11.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.2-223...v2.11.3-241.1
+[2.11.2-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.1-223...v2.11.2-223
+[2.11.1-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.0-223...v2.11.1-223
+[2.11.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.2-223...v2.11.0-223
+[2.10.2-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.1-223...v2.10.2-223
+[2.10.1-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.0-223...v2.10.1-223
+[2.10.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.9.0-223...v2.10.0-223
+[2.9.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.5-223...v2.9.0-223
+[2.8.5-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.4-223...v2.8.5-223
+[2.8.4-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.3-223...v2.8.4-223
+[2.8.3-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.2-233...v2.8.3-223
+[2.8.2-233]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.1-223...v2.8.2-233
+[2.8.2-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.1-223...v2.8.2-223
+[2.8.1-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.0-223...v2.8.1-223
+[2.8.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.7.1-223...v2.8.0-223
+[2.7.1-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.7.0-223...v2.7.1-223
+[2.7.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.3-223...v2.7.0-223
+[2.6.3-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.2-222...v2.6.3-223
+[2.6.2-222]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.1-222...v2.6.2-222
+[2.6.1-222]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.0-222...v2.6.1-222
+[2.6.0-222]: https://github.com/carlrobertoh/CodeGPT/compare/v2.5.1...v2.6.0-222
 [2.5.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/carlrobertoh/CodeGPT/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/carlrobertoh/CodeGPT/compare/v2.3.1...v2.4.0
