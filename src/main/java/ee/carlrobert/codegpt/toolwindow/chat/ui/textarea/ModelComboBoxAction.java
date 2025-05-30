@@ -1,7 +1,6 @@
 package ee.carlrobert.codegpt.toolwindow.chat.ui.textarea;
 
 import static ee.carlrobert.codegpt.settings.service.ServiceType.ANTHROPIC;
-import static ee.carlrobert.codegpt.settings.service.ServiceType.AZURE;
 import static ee.carlrobert.codegpt.settings.service.ServiceType.CODEGPT;
 import static ee.carlrobert.codegpt.settings.service.ServiceType.CUSTOM_OPENAI;
 import static ee.carlrobert.codegpt.settings.service.ServiceType.GOOGLE;
@@ -26,6 +25,7 @@ import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupListener;
 import com.intellij.openapi.ui.popup.LightweightWindowEvent;
 import com.intellij.openapi.ui.popup.ListPopup;
+import ee.carlrobert.codegpt.CodeGPTBundle;
 import ee.carlrobert.codegpt.CodeGPTKeys;
 import ee.carlrobert.codegpt.Icons;
 import ee.carlrobert.codegpt.completions.llama.LlamaModel;
@@ -133,7 +133,7 @@ public class ModelComboBoxAction extends ComboBoxAction {
     var actionGroup = new DefaultActionGroup();
 
     if (availableProviders.contains(CODEGPT)) {
-      actionGroup.addSeparator("CodeGPT");
+      actionGroup.addSeparator(CodeGPTBundle.get("project.label"));
       actionGroup.addAll(getCodeGPTModelActions(project, presentation));
       actionGroup.addSeparator();
     }
@@ -142,6 +142,9 @@ public class ModelComboBoxAction extends ComboBoxAction {
       var openaiGroup = DefaultActionGroup.createPopupGroup(() -> "OpenAI");
       openaiGroup.getTemplatePresentation().setIcon(Icons.OpenAI);
       List.of(
+              OpenAIChatCompletionModel.GPT_4_1,
+              OpenAIChatCompletionModel.GPT_4_1_MINI,
+              OpenAIChatCompletionModel.GPT_4_1_NANO,
               OpenAIChatCompletionModel.O_3_MINI, OpenAIChatCompletionModel.O_1_PREVIEW,
               OpenAIChatCompletionModel.O_1_MINI,
               OpenAIChatCompletionModel.GPT_4_O,
@@ -170,14 +173,13 @@ public class ModelComboBoxAction extends ComboBoxAction {
           Icons.Anthropic,
           presentation));
     }
-    if (availableProviders.contains(AZURE)) {
-      actionGroup.add(
-          createModelAction(AZURE, "Azure OpenAI", Icons.Azure, presentation));
-    }
     if (availableProviders.contains(GOOGLE)) {
       var googleGroup = DefaultActionGroup.createPopupGroup(() -> "Google (Gemini)");
       googleGroup.getTemplatePresentation().setIcon(Icons.Google);
       List.of(
+              GoogleModel.GEMINI_2_5_PRO_PREVIEW,
+              GoogleModel.GEMINI_2_5_FLASH_PREVIEW,
+              GoogleModel.GEMINI_2_5_PRO_EXP,
               GoogleModel.GEMINI_2_0_PRO_EXP,
               GoogleModel.GEMINI_2_0_FLASH_THINKING_EXP,
               GoogleModel.GEMINI_2_0_FLASH,
@@ -252,10 +254,6 @@ public class ModelComboBoxAction extends ComboBoxAction {
       case ANTHROPIC:
         templatePresentation.setIcon(Icons.Anthropic);
         templatePresentation.setText("Anthropic (Claude)");
-        break;
-      case AZURE:
-        templatePresentation.setIcon(Icons.Azure);
-        templatePresentation.setText("Azure OpenAI");
         break;
       case LLAMA_CPP:
         templatePresentation.setText(getLlamaCppPresentationText());

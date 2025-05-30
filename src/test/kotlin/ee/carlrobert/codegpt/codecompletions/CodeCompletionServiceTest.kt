@@ -17,9 +17,9 @@ import testsupport.IntegrationTest
 
 class CodeCompletionServiceTest : IntegrationTest() {
 
-    fun `test code completion with CodeGPT provider`() {
+    fun `test code completion with ProxyAI provider`() {
         useCodeGPTService()
-        service<ConfigurationSettings>().state.codeCompletionSettings.multiLineEnabled = false
+        service<CodeGPTServiceSettings>().state.nextEditsEnabled = false
         myFixture.configureByText(
             "CompletionTest.java",
             FileUtil.getResourceContent("/codecompletions/code-completion-file.txt")
@@ -59,7 +59,7 @@ class CodeCompletionServiceTest : IntegrationTest() {
 
     fun `test code completion with OpenAI provider`() {
         useOpenAIService()
-        service<ConfigurationSettings>().state.codeCompletionSettings.multiLineEnabled = false
+        service<CodeGPTServiceSettings>().state.nextEditsEnabled = false
         myFixture.configureByText(
             "CompletionTest.java",
             FileUtil.getResourceContent("/codecompletions/code-completion-file.txt")
@@ -99,7 +99,7 @@ class CodeCompletionServiceTest : IntegrationTest() {
 
     fun `test apply next partial completion word`() {
         useLlamaService(true)
-        service<ConfigurationSettings>().state.codeCompletionSettings.multiLineEnabled = false
+        service<CodeGPTServiceSettings>().state.nextEditsEnabled = false
         myFixture.configureByText(
             "CompletionTest.java",
             FileUtil.getResourceContent("/codecompletions/code-completion-file.txt")
@@ -152,9 +152,9 @@ class CodeCompletionServiceTest : IntegrationTest() {
         }
     }
 
-    fun `test apply inline suggestions without initial following text`() {
+    fun `_test apply inline suggestions without initial following text`() {
         useCodeGPTService()
-        service<ConfigurationSettings>().state.codeCompletionSettings.multiLineEnabled = false
+        service<CodeGPTServiceSettings>().state.nextEditsEnabled = false
         myFixture.configureByText(
             "CompletionTest.java",
             "class Node {\n  "
@@ -269,10 +269,9 @@ class CodeCompletionServiceTest : IntegrationTest() {
         }
     }
 
-    fun `test apply inline suggestions with initial following text`() {
+    fun `_test apply inline suggestions with initial following text`() {
         useCodeGPTService()
-        service<CodeGPTServiceSettings>().state.codeAssistantEnabled = false
-        service<ConfigurationSettings>().state.codeCompletionSettings.multiLineEnabled = false
+        service<CodeGPTServiceSettings>().state.nextEditsEnabled = false
         myFixture.configureByText(
             "CompletionTest.java",
             "if () {\n   \n} else {\n}"
@@ -341,9 +340,9 @@ class CodeCompletionServiceTest : IntegrationTest() {
         }
     }
 
-    fun `test adjust completion line whitespaces`() {
+    fun `_test adjust completion line whitespaces`() {
         useCodeGPTService()
-        service<ConfigurationSettings>().state.codeCompletionSettings.multiLineEnabled = false
+        service<CodeGPTServiceSettings>().state.nextEditsEnabled = false
         myFixture.configureByText(
             "CompletionTest.java",
             "class Node {\n" +

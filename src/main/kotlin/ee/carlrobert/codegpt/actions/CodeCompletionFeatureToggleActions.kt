@@ -29,7 +29,6 @@ abstract class CodeCompletionFeatureToggleActions(
         CUSTOM_OPENAI -> service<CustomServicesSettings>().state.active.codeCompletionSettings::codeCompletionsEnabled::set
 
         ANTHROPIC,
-        AZURE,
         GOOGLE,
         null -> { _: Boolean -> Unit } // no-op for these services
     }(enableFeatureAction)
@@ -37,7 +36,8 @@ abstract class CodeCompletionFeatureToggleActions(
     override fun update(e: AnActionEvent) {
         val selectedService = GeneralSettings.getSelectedService()
         val codeCompletionEnabled =
-            e.project?.service<CodeCompletionService>()?.isCodeCompletionsEnabled(selectedService) ?: false
+            e.project?.service<CodeCompletionService>()?.isCodeCompletionsEnabled(selectedService)
+                ?: false
         e.presentation.isVisible = codeCompletionEnabled != enableFeatureAction
         e.presentation.isEnabled = when (selectedService) {
             CODEGPT,
@@ -47,7 +47,6 @@ abstract class CodeCompletionFeatureToggleActions(
             OLLAMA -> true
 
             ANTHROPIC,
-            AZURE,
             GOOGLE,
             null -> false
         }

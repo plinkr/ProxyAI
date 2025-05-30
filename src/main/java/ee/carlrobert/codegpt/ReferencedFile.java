@@ -1,23 +1,36 @@
 package ee.carlrobert.codegpt;
 
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
-import com.intellij.openapi.vfs.VfsUtilCore;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
+import ee.carlrobert.codegpt.util.file.FileUtil;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public record ReferencedFile(String fileName, String filePath, String fileContent) {
+public record ReferencedFile(String fileName, String filePath, String fileContent,
+                             boolean directory) {
+
+  public ReferencedFile(String fileName, String filePath, String fileContent) {
+    this(fileName, filePath, fileContent, false);
+  }
+
+  public ReferencedFile(String fileName, String filePath, String fileContent, boolean directory) {
+    this.fileName = fileName;
+    this.filePath = filePath;
+    this.fileContent = fileContent;
+    this.directory = directory;
+  }
 
   public static ReferencedFile from(File file) {
     return new ReferencedFile(
         file.getName(),
         file.getPath(),
-        readContent(file)
+        FileUtil.readContent(file),
+        file.isDirectory()
     );
   }
 
@@ -25,33 +38,23 @@ public record ReferencedFile(String fileName, String filePath, String fileConten
     return new ReferencedFile(
         virtualFile.getName(),
         virtualFile.getPath(),
-        getVirtualFileContent(virtualFile)
+        getVirtualFileContent(virtualFile),
+        virtualFile.isDirectory()
     );
   }
 
   private static String getVirtualFileContent(VirtualFile virtualFile) {
+    if (virtualFile.isDirectory()) {
+      return "";
+    }
+
     var documentManager = FileDocumentManager.getInstance();
-    var document = documentManager.getDocument(virtualFile);
+    var document = ApplicationManager.getApplication()
+        .runReadAction((Computable<Document>) () -> documentManager.getDocument(virtualFile));
     if (document != null && documentManager.isDocumentUnsaved(document)) {
       return document.getText();
     }
-    return readContent(virtualFile);
-  }
-
-  private static String readContent(File file) {
-    try {
-      return new String(Files.readAllBytes(Paths.get(file.getPath())));
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to read file content", e);
-    }
-  }
-
-  private static String readContent(VirtualFile virtualFile) {
-    try {
-      return VfsUtilCore.loadText(virtualFile);
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to read virtual file content", e);
-    }
+    return FileUtil.readContent(virtualFile);
   }
 
   public String getFileExtension() {

@@ -5,12 +5,16 @@ import com.intellij.icons.AllIcons.Actions
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.ui.RoundedIcon
+import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBLabel
+import com.intellij.util.application
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.components.BorderLayoutPanel
@@ -23,11 +27,9 @@ import ee.carlrobert.codegpt.toolwindow.chat.ui.ChatMessageResponseBody
 import ee.carlrobert.codegpt.toolwindow.chat.ui.ImageAccordion
 import ee.carlrobert.codegpt.toolwindow.chat.ui.SelectedFilesAccordion
 import ee.carlrobert.codegpt.ui.IconActionButton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.awt.Image
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -45,7 +47,6 @@ class UserMessagePanel(
         background = ColorUtil.brighter(getBackground(), 2)
 
         setupAdditionalContext()
-        setupImageIfPresent()
         setupResponseBody()
     }
 
@@ -57,8 +58,8 @@ class UserMessagePanel(
             } else {
                 val originalIcon = ImageIcon(Base64.getDecoder().decode(avatarBase64))
                 val resizedImage = originalIcon.image.getScaledInstance(
-                    Icons.Default.iconWidth,
-                    Icons.Default.iconHeight,
+                    24,
+                    24,
                     Image.SCALE_SMOOTH
                 )
                 RoundedIcon(resizedImage, 1.0)
@@ -115,21 +116,6 @@ class UserMessagePanel(
         )
     }
 
-    fun displayImage(imageFilePath: String) {
-        try {
-            val path = Paths.get(imageFilePath)
-            body.addToTop(ImageAccordion(path.fileName.toString(), Files.readAllBytes(path)))
-        } catch (e: IOException) {
-            body.addToTop(
-                JBLabel(
-                    "<html><small>Unable to load image $imageFilePath</small></html>",
-                    AllIcons.General.Error,
-                    SwingConstants.LEFT
-                )
-            )
-        }
-    }
-
     private fun setupAdditionalContext() {
         val additionalContextPanel = getAdditionalContextPanel(project, message)
         if (additionalContextPanel != null) {
@@ -137,17 +123,9 @@ class UserMessagePanel(
         }
     }
 
-    private fun setupImageIfPresent() {
-        message.imageFilePath?.let { imageFilePath ->
-            if (imageFilePath.isNotEmpty()) {
-                displayImage(imageFilePath)
-            }
-        }
-    }
-
     private fun setupResponseBody() {
         addContent(
-            ChatMessageResponseBody(project, true, false, false, parentDisposable)
+            ChatMessageResponseBody(project, true, false, false, false, parentDisposable)
                 .withResponse(message.prompt)
         )
     }
@@ -193,12 +171,44 @@ class UserMessagePanel(
             }
 
             if (referencedFilePaths.isNotEmpty()) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    val referencedFiles = referencedFilePaths.mapNotNull {
-                        LocalFileSystem.getInstance().findFileByPath(it)
+                application.executeOnPooledThread {
+                    val links = referencedFilePaths
+                        .mapNotNull {
+                            LocalFileSystem.getInstance().findFileByPath(it)
+                        }
+                        .map {
+                            val actionLink = ActionLink(
+                                Paths.get(it.path).fileName.toString(),
+                                ActionListener { _: ActionEvent ->
+                                    FileEditorManager.getInstance(project)
+                                        .openFile(Objects.requireNonNull(it), true)
+                                })
+                            actionLink.icon =
+                                if (it.isDirectory) AllIcons.Nodes.Folder else it.fileType.icon
+                            actionLink
+                        }
+                        .toList()
+                    runInEdt {
+                        additionalContextPanel.add(SelectedFilesAccordion(links))
                     }
-                    withContext(Dispatchers.Main) {
-                        additionalContextPanel.add(SelectedFilesAccordion(project, referencedFiles))
+                }
+            }
+
+            message.imageFilePath?.let { imageFilePath ->
+                if (imageFilePath.isNotEmpty()) {
+                    try {
+                        val path = Paths.get(imageFilePath)
+                        additionalContextPanel.add(
+                            ImageAccordion(path.fileName.toString(), Files.readAllBytes(path))
+                        )
+                    } catch (e: IOException) {
+                        additionalContextPanel.add(
+                            JBLabel(
+                                "<html><small>Unable to load image $imageFilePath</small></html>",
+                                AllIcons.General.Error,
+                                SwingConstants.LEFT
+                            )
+                        )
                     }
                 }
             }

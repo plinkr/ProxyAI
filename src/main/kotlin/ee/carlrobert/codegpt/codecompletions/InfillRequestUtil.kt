@@ -7,23 +7,20 @@ import com.intellij.refactoring.suggested.startOffset
 import ee.carlrobert.codegpt.EncodingManager
 import ee.carlrobert.codegpt.codecompletions.psi.CompletionContextService
 import ee.carlrobert.codegpt.codecompletions.psi.readText
-import ee.carlrobert.codegpt.codecompletions.psi.structure.PsiStructureProvider
+import ee.carlrobert.codegpt.psistructure.PsiStructureProvider
 import ee.carlrobert.codegpt.settings.configuration.ConfigurationSettings
 import ee.carlrobert.codegpt.util.GitUtil
 
 
 object InfillRequestUtil {
 
-    suspend fun buildInfillRequest(
-        request: InlineCompletionRequest,
-        type: CompletionType
-    ): InfillRequest {
+    suspend fun buildInfillRequest(request: InlineCompletionRequest): InfillRequest {
         val caretOffset = readAction { request.editor.caretModel.offset }
-        val infillRequestBuilder = InfillRequest.Builder(request.document, caretOffset, type)
+        val infillRequestBuilder = InfillRequest.Builder(request.document, caretOffset)
             .fileDetails(
                 InfillRequest.FileDetails(
                     request.document.text,
-                    request.file.virtualFile.extension
+                    request.file.virtualFile.path
                 )
             )
 

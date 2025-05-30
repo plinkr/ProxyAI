@@ -15,6 +15,7 @@ import ee.carlrobert.codegpt.settings.service.codegpt.CodeGPTServiceConfigurable
 import ee.carlrobert.codegpt.toolwindow.ui.ResponseMessagePanel;
 import ee.carlrobert.codegpt.ui.UIUtil;
 import ee.carlrobert.codegpt.util.ApplicationUtil;
+import java.awt.Rectangle;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,10 +42,10 @@ public class ChatToolWindowScrollablePanel extends ScrollablePanel {
       panel.addContent(UIUtil.createTextPane("""
               <html>
               <p style="margin-top: 4px; margin-bottom: 4px;">
-                It looks like you haven't configured your API key yet. Visit <a href="#OPEN_SETTINGS">CodeGPT settings</a> to do so.
+                It looks like you haven't configured your API key yet. Visit <a href="#OPEN_SETTINGS">ProxyAI settings</a> to do so.
               </p>
               <p style="margin-top: 4px; margin-bottom: 4px;">
-                Don't have an account? <a href="https://codegpt.ee">Sign up</a> to get the most out of CodeGPT.
+                Don't have an account? <a href="https://tryproxy.io/signin">Sign up</a> to get the most out of ProxyAI.
               </p>
               </html>""",
           false,
@@ -87,6 +88,10 @@ public class ChatToolWindowScrollablePanel extends ScrollablePanel {
     visibleMessagePanels.clear();
     removeAll();
     update();
+  }
+
+  public void scrollToBottom() {
+    scrollRectToVisible(new Rectangle(0, getHeight(), 1, 1));
   }
 
   public void update() {

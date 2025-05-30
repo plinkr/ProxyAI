@@ -4,8 +4,6 @@ import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightVirtualFile
 import ee.carlrobert.codegpt.CodeGPTKeys
 import ee.carlrobert.codegpt.EncodingManager
-import ee.carlrobert.codegpt.actions.IncludeFilesInContextNotifier
-import ee.carlrobert.codegpt.actions.IncludeFilesInContextNotifier.FILES_INCLUDED_IN_CONTEXT_TOPIC
 import ee.carlrobert.codegpt.completions.ConversationType
 import ee.carlrobert.codegpt.completions.HuggingFaceModel
 import ee.carlrobert.codegpt.completions.llama.PromptTemplate.LLAMA
@@ -44,7 +42,7 @@ class ChatToolWindowTabPanelTest : IntegrationTest() {
                     "messages"
                 )
                 .containsExactly(
-                    "gpt-4",
+                    "gpt-4o",
                     listOf(
                         mapOf("role" to "system", "content" to "TEST_SYSTEM_PROMPT"),
                         mapOf("role" to "user", "content" to "Hello!")
@@ -106,15 +104,11 @@ class ChatToolWindowTabPanelTest : IntegrationTest() {
             listOf("TEST_FILE_PATH_1", "TEST_FILE_PATH_2", "TEST_FILE_PATH_3")
         val conversation = ConversationService.getInstance().startConversation()
         val panel = ChatToolWindowTabPanel(project, conversation)
-        project.messageBus
-            .syncPublisher<IncludeFilesInContextNotifier>(FILES_INCLUDED_IN_CONTEXT_TOPIC)
-            .filesIncluded(
-                listOf(
-                    LightVirtualFile("TEST_FILE_NAME_1", "TEST_FILE_CONTENT_1"),
-                    LightVirtualFile("TEST_FILE_NAME_2", "TEST_FILE_CONTENT_2"),
-                    LightVirtualFile("TEST_FILE_NAME_3", "TEST_FILE_CONTENT_3"),
-                )
-            )
+        panel.includeFiles(listOf(
+            LightVirtualFile("TEST_FILE_NAME_1", "TEST_FILE_CONTENT_1"),
+            LightVirtualFile("TEST_FILE_NAME_2", "TEST_FILE_CONTENT_2"),
+            LightVirtualFile("TEST_FILE_NAME_3", "TEST_FILE_CONTENT_3"),
+        ))
         expectOpenAI(StreamHttpExchange { request: RequestEntity ->
             assertThat(request.uri.path).isEqualTo("/v1/chat/completions")
             assertThat(request.method).isEqualTo("POST")
@@ -125,7 +119,7 @@ class ChatToolWindowTabPanelTest : IntegrationTest() {
                     "messages"
                 )
                 .containsExactly(
-                    "gpt-4",
+                    "gpt-4o",
                     listOf(
                         mapOf("role" to "system", "content" to "TEST_SYSTEM_PROMPT"),
                         mapOf(
@@ -133,23 +127,20 @@ class ChatToolWindowTabPanelTest : IntegrationTest() {
                             "content" to """
                             Use the following context to answer question at the end:
 
-                            File Path: /TEST_FILE_NAME_1
-                            File Content:
-                            ```TEST_FILE_NAME_1
+                            ```/TEST_FILE_NAME_1:/TEST_FILE_NAME_1
                             TEST_FILE_CONTENT_1
                             ```
                             
-                            File Path: /TEST_FILE_NAME_2
-                            File Content:
-                            ```TEST_FILE_NAME_2
+                            
+                            ```/TEST_FILE_NAME_2:/TEST_FILE_NAME_2
                             TEST_FILE_CONTENT_2
                             ```
                             
-                            File Path: /TEST_FILE_NAME_3
-                            File Content:
-                            ```TEST_FILE_NAME_3
+                            
+                            ```/TEST_FILE_NAME_3:/TEST_FILE_NAME_3
                             TEST_FILE_CONTENT_3
                             ```
+                            
                             
                             Question: TEST_MESSAGE""".trimIndent()
                         )
@@ -306,15 +297,13 @@ class ChatToolWindowTabPanelTest : IntegrationTest() {
             listOf("TEST_FILE_PATH_1", "TEST_FILE_PATH_2", "TEST_FILE_PATH_3")
         val conversation = ConversationService.getInstance().startConversation()
         val panel = ChatToolWindowTabPanel(project, conversation)
-        project.messageBus
-            .syncPublisher<IncludeFilesInContextNotifier>(FILES_INCLUDED_IN_CONTEXT_TOPIC)
-            .filesIncluded(
-                listOf(
-                    LightVirtualFile("TEST_FILE_NAME_1", "TEST_FILE_CONTENT_1"),
-                    LightVirtualFile("TEST_FILE_NAME_2", "TEST_FILE_CONTENT_2"),
-                    LightVirtualFile("TEST_FILE_NAME_3", "TEST_FILE_CONTENT_3"),
-                )
+        panel.includeFiles(
+            listOf(
+                LightVirtualFile("TEST_FILE_NAME_1", "TEST_FILE_CONTENT_1"),
+                LightVirtualFile("TEST_FILE_NAME_2", "TEST_FILE_CONTENT_2"),
+                LightVirtualFile("TEST_FILE_NAME_3", "TEST_FILE_CONTENT_3"),
             )
+        )
         expectOpenAI(StreamHttpExchange { request: RequestEntity ->
             assertThat(request.uri.path).isEqualTo("/v1/chat/completions")
             assertThat(request.method).isEqualTo("POST")
@@ -325,7 +314,7 @@ class ChatToolWindowTabPanelTest : IntegrationTest() {
                     "messages"
                 )
                 .containsExactly(
-                    "gpt-4",
+                    "gpt-4o",
                     listOf(
                         mapOf(
                             "role" to "system",
@@ -336,23 +325,20 @@ class ChatToolWindowTabPanelTest : IntegrationTest() {
                             "content" to """
                             Use the following context to answer question at the end:
 
-                            File Path: /TEST_FILE_NAME_1
-                            File Content:
-                            ```TEST_FILE_NAME_1
+                            ```/TEST_FILE_NAME_1:/TEST_FILE_NAME_1
                             TEST_FILE_CONTENT_1
                             ```
                             
-                            File Path: /TEST_FILE_NAME_2
-                            File Content:
-                            ```TEST_FILE_NAME_2
+                            
+                            ```/TEST_FILE_NAME_2:/TEST_FILE_NAME_2
                             TEST_FILE_CONTENT_2
                             ```
                             
-                            File Path: /TEST_FILE_NAME_3
-                            File Content:
-                            ```TEST_FILE_NAME_3
+                            
+                            ```/TEST_FILE_NAME_3:/TEST_FILE_NAME_3
                             TEST_FILE_CONTENT_3
                             ```
+                            
                             
                             Question: TEST_MESSAGE""".trimIndent()
                         )

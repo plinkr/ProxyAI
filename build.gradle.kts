@@ -1,14 +1,24 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
+import org.jetbrains.intellij.tasks.RunIdeTask
 import java.io.FileInputStream
 import java.util.*
 
+val localPropertiesFile = file("local.properties")
 val env = environment("env").getOrNull()
 
 fun loadProperties(filename: String): Properties = Properties().apply {
     load(FileInputStream(filename))
 }
+
+val localProperties: Properties? = if (localPropertiesFile.exists()) {
+  loadProperties("local.properties")
+} else {
+  null
+}
+
+val customIdePath: String? = localProperties?.getProperty("customIdePath")
 
 fun properties(key: String): Provider<String> {
   if ("win-arm64" == env) {
@@ -24,6 +34,7 @@ fun environment(key: String) = providers.environmentVariable(key)
 plugins {
   id("codegpt.java-conventions")
   alias(libs.plugins.changelog)
+  alias(libs.plugins.protobuf)
 }
 
 group = properties("pluginGroup").get()
@@ -67,12 +78,38 @@ dependencies {
   implementation(libs.jsoup)
   implementation(libs.commons.text)
   implementation(libs.jtokkit)
+  implementation(libs.grpc.protobuf)
+  implementation(libs.grpc.stub)
+  implementation(libs.grpc.netty.shaded)
   testImplementation(kotlin("test"))
 }
 
 tasks.register<Exec>("updateSubmodules") {
   workingDir(rootDir)
   commandLine("git", "submodule", "update", "--init", "--recursive")
+}
+
+/**
+ * Task to run a custom IntelliJ IDEA sandbox.
+ *
+ * This task launches a custom IntelliJ IDEA installation using the path specified in the
+ * 'customIdePath' property from local.properties.
+ *
+ * IMPORTANT:
+ * - On macOS, the path must include the 'Contents' directory (e.g., /Applications/IntelliJ IDEA.app/Contents).
+ * - For Windows or Linux, specify the appropriate path to the IntelliJ IDEA installation.
+ *
+ * Usage:
+ *   ./gradlew runCustomIde
+ */
+if (customIdePath != null) {
+    tasks.register<RunIdeTask>("runCustomIde") {
+        group = "intellij"
+        description = "Start custom idea sandbox"
+        ideDir.set(file(customIdePath))
+        environment("ENVIRONMENT", "LOCAL")
+        autoReloadPlugins.set(false)
+    }
 }
 
 tasks {
@@ -124,7 +161,7 @@ tasks {
     enabled = true
     dependsOn("updateSubmodules")
     from("src/main/cpp/llama.cpp") {
-      into("CodeGPT/llama.cpp")
+      into("ProxyAI/llama.cpp")
     }
   }
 
@@ -160,5 +197,24 @@ tasks {
       exceptionFormat = TestExceptionFormat.FULL
       showStandardStreams = true
     }
+  }
+}
+
+protobuf {
+  protoc {
+    artifact = libs.protobuf.protoc.get().toString()
+  }
+  plugins {
+    create("grpc") {
+      artifact = libs.protobuf.java.get().toString()
+    }
+  }
+  generateProtoTasks {
+    all()
+      .forEach {
+          it.plugins {
+            create("grpc")
+          }
+      }
   }
 }

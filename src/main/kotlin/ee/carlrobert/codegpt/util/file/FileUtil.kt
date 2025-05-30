@@ -3,14 +3,13 @@ package ee.carlrobert.codegpt.util.file
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.io.FileUtil.createDirectory
+import com.intellij.openapi.vfs.JarFileSystem
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.VirtualFileFilter
 import ee.carlrobert.codegpt.settings.service.llama.LlamaSettings.getLlamaModelsPath
 import java.io.File
 import java.io.FileOutputStream
@@ -27,9 +26,31 @@ import java.nio.file.StandardOpenOption
 import java.text.DecimalFormat
 import java.util.*
 import java.util.regex.Pattern
+import kotlin.Throws
 
 object FileUtil {
-    private val LOG = Logger.getInstance(FileUtil::class.java)
+
+    private val logger = thisLogger()
+
+    @JvmStatic
+    fun readContent(file: File): String {
+        try {
+            return String(Files.readAllBytes(Paths.get(file.path)))
+        } catch (e: IOException) {
+            logger.error("Failed to read file content", e)
+            return ""
+        }
+    }
+
+    @JvmStatic
+    fun readContent(virtualFile: VirtualFile): String {
+        try {
+            return VfsUtilCore.loadText(virtualFile)
+        } catch (e: IOException) {
+            logger.error("Failed to read virtual file content", e)
+            return ""
+        }
+    }
 
     @JvmStatic
     fun createFile(directoryPath: Any, fileName: String?, fileContent: String?): File {
@@ -104,7 +125,7 @@ object FileUtil {
     }
 
     @JvmStatic
-    fun findLanguageExtensionMapping(language: String): Map.Entry<String, String> {
+    fun findLanguageExtensionMapping(language: String? = ""): Map.Entry<String, String> {
         val defaultValue = mapOf("Text" to ".txt").entries.first()
         val mapper = ObjectMapper()
 
@@ -120,7 +141,7 @@ object FileUtil {
                 object : TypeReference<List<LanguageFileExtensionDetails>>() {
                 })
         } catch (e: JsonProcessingException) {
-            LOG.error("Unable to extract file extension", e)
+            logger.error("Unable to extract file extension", e)
             return defaultValue
         }
 
@@ -198,7 +219,7 @@ object FileUtil {
     @JvmStatic
     fun findFirstExtension(
         languageFileExtensionMappings: List<LanguageFileExtensionDetails>,
-        language: String
+        language: String? = ""
     ): Optional<Map.Entry<String, String>> {
         return languageFileExtensionMappings.stream()
             .filter {
@@ -216,53 +237,21 @@ object FileUtil {
             }
     }
 
-    fun searchProjectFiles(
-        project: Project,
-        query: String,
-        maxResults: Int = 6,
-    ): List<VirtualFile> {
-        val results = mutableListOf<SearchResult>()
-        val fileIndex = project.service<ProjectFileIndex>()
-
-        fileIndex.iterateContent({ file ->
-            if (results.size > 9) {
-                return@iterateContent false
+    fun resolveVirtualFile(filePath: String?): VirtualFile? {
+        if (filePath == null) return null
+        return try {
+            if (filePath.contains("!")) {
+                val jarSeparatorIndex = filePath.indexOf('!')
+                val archivePath = filePath.substring(0, jarSeparatorIndex)
+                val internalPath = filePath.substring(jarSeparatorIndex + 1).removePrefix("/")
+                val jarFileSystemPath = "$archivePath!/$internalPath"
+                JarFileSystem.getInstance().findFileByPath(jarFileSystemPath)
+            } else {
+                LocalFileSystem.getInstance().refreshAndFindFileByIoFile(File(filePath))
             }
-
-            val score = calculateScore(file, query)
-            if (score > 0) {
-                results.add(SearchResult(file, score))
-            }
-            true
-        }, object : VirtualFileFilter {
-            override fun accept(file: VirtualFile): Boolean {
-                return !file.isDirectory && fileIndex.isInContent(file)
-            }
-
-            override fun toString(): String {
-                return "NONE"
-            }
-        })
-
-        return results
-            .sortedByDescending { it.score }
-            .take(maxResults)
-            .map { it.file }
-    }
-
-    private fun calculateScore(file: VirtualFile, query: String): Int {
-        val fileName = file.nameWithoutExtension.lowercase()
-        val lowercaseQuery = query.lowercase()
-
-        return when {
-            fileName == lowercaseQuery -> 100
-            fileName.startsWith(lowercaseQuery) -> 50
-            lowercaseQuery in fileName -> 25
-            fileName.length < lowercaseQuery.length && lowercaseQuery.startsWith(fileName) -> 15
-            else -> 0
+        } catch (t: Throwable) {
+            logger.error(t)
+            null
         }
     }
-
 }
-
-data class SearchResult(val file: VirtualFile, val score: Int)

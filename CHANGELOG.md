@@ -6,6 +6,120 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0-241.1] - 2025-05-13
+
+### Added
+
+- Support for both Autocomplete and Next Edits
+- o4-mini model for ProxyAI provider
+- Auto-scroll down when submitting a message
+- Loading animation during output generation and several other UI improvements
+
+### Fixed
+
+- NPEs on different types of error messages in chat UI
+- Other IDE warnings/errors
+
+## [3.2.5-241.1] - 2025-04-30
+
+### Added
+
+- Apply changes even if the target file isn't open
+- Support for creating new files using the 'Apply Changes' action
+- Apply and Reject buttons to the diff toolbar
+
+## [3.2.4-241.1] - 2025-04-23
+
+### Added
+
+- GPT-4.1 models for OpenAI provider
+
+### Fixed
+
+- Internal errors and warnings caused by recent IDE upgrade
+
+## [3.2.3-241.1] - 2025-04-16
+
+### Added
+
+- GPT-4.1 models for ProxyAI users 
+- Import/Export functionality for Personas
+
+### Fixed
+
+- Duplicate chat referenced files
+- Several IDE warnings/errors
+
+## [3.2.2-241.1] - 2025-04-06
+
+### Added
+
+- Gemini 2.5 Pro model for ProxyAI users
+
+### Fixed
+
+- SSL/TLS issues when connecting to Proxy API
+- UI issues when using images
+- Next Edits manual triggering
+
+## [3.2.1-241.1] - 2025-04-03
+
+### Added
+
+- Gemini 2.5 Pro (exp) model
+
+### Fixed
+
+- Toolwindow ID inconsistencies
+- EDT issues when reading files on submit
+
+### Removed
+
+- Clear tags action from editor's context menu
+
+## [3.2.0-241.1] - 2025-03-28
+
+### Added
+
+- UX/UI improvements for chat context selection (migration from old logic to editor's lookup API)
+- Shortcut key for deleting all chat tags [#946](https://github.com/carlrobertoh/ProxyAI/pull/946)
+- Custom base host support for Anthropic provider [#948](https://github.com/carlrobertoh/ProxyAI/pull/948)
+- Img support for Claude 3.7 Sonnet (CodeGPT)
+
+## [3.1.1-241.1] - 2025-03-24
+
+### Added
+
+- Re-add logic to include the active editor selection when creating a new chat
+
+### Fixed
+
+- Custom OpenAI settings UI [#938](https://github.com/carlrobertoh/ProxyAI/pull/938)
+- Suggestions popup positioning and tag panel styling [#934](https://github.com/carlrobertoh/ProxyAI/pull/934)
+- Typo in Rubber Duck persona [#892](https://github.com/carlrobertoh/ProxyAI/pull/892)
+- Prompts configuration [#933](https://github.com/carlrobertoh/ProxyAI/pull/933)
+
+## [3.1.0-241.1] - 2025-03-20
+
+### Added
+
+- Support for multi-line edits (replaces the old Code Assistant logic)
+- Popup menu with close actions and other UX improvements for chat tags
+- Support for importing and exporting Custom OpenAI settings [#921](https://github.com/carlrobertoh/ProxyAI/pull/921)
+- Dependency structure analyser for chat (Kotlin) [#897](https://github.com/carlrobertoh/ProxyAI/pull/897)
+
+## [3.0.0-241.1] - 2025-03-04
+
+### Rebranding
+
+- CodeGPT -> ProxyAI
+
+## [2.16.4-241.1] - 2025-02-25
+
+### Added
+
+- Claude 3.7 Sonnet model (CodeGPT)
+
 ## [2.16.3-241.1] - 2025-02-11
 
 ### Added
@@ -908,81 +1022,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `OPENAI_API_KEY` persistence, key is saved in the OS password safe from now on
 
-[Unreleased]: https://github.com/carlrobertoh/CodeGPT/compare/v2.16.3-241.1...HEAD
-[2.16.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.16.2-241.1...v2.16.3-241.1
-[2.16.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.16.1-241.1...v2.16.2-241.1
-[2.16.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.16.0-241.1...v2.16.1-241.1
-[2.16.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.15.2-241.1...v2.16.0-241.1
-[2.15.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.15.1-241.1...v2.15.2-241.1
-[2.15.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.15.0-241.1...v2.15.1-241.1
-[2.15.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.14.3-241.1...v2.15.0-241.1
-[2.14.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.14.2-241.1...v2.14.3-241.1
-[2.14.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.14.1-241.1...v2.14.2-241.1
-[2.14.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.14.0-241.1...v2.14.1-241.1
-[2.14.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.13.1-241.1...v2.14.0-241.1
-[2.13.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.13.0-241.1...v2.13.1-241.1
-[2.13.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.5-241.1...v2.13.0-241.1
-[2.12.5-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.4-241.1...v2.12.5-241.1
-[2.12.4-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.3-241.1...v2.12.4-241.1
-[2.12.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.2-241.1...v2.12.3-241.1
-[2.12.2-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.1-241.1...v2.12.2-241.1
-[2.12.1-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.12.0-241.1...v2.12.1-241.1
-[2.12.0-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.7-241.1...v2.12.0-241.1
-[2.11.7-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.6-241.1...v2.11.7-241.1
-[2.11.6-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.5-241.1...v2.11.6-241.1
-[2.11.5-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.4-241.1...v2.11.5-241.1
-[2.11.4-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.3-241.1...v2.11.4-241.1
-[2.11.3-241.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.2-223...v2.11.3-241.1
-[2.11.2-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.1-223...v2.11.2-223
-[2.11.1-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.11.0-223...v2.11.1-223
-[2.11.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.2-223...v2.11.0-223
-[2.10.2-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.1-223...v2.10.2-223
-[2.10.1-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.10.0-223...v2.10.1-223
-[2.10.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.9.0-223...v2.10.0-223
-[2.9.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.5-223...v2.9.0-223
-[2.8.5-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.4-223...v2.8.5-223
-[2.8.4-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.3-223...v2.8.4-223
-[2.8.3-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.2-233...v2.8.3-223
-[2.8.2-233]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.1-223...v2.8.2-233
+[Unreleased]: https://github.com/carlrobertoh/ProxyAI/compare/v3.3.0-241.1...HEAD
+[3.3.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.2.5-241.1...v3.3.0-241.1
+[3.2.5-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.2.4-241.1...v3.2.5-241.1
+[3.2.4-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.2.3-241.1...v3.2.4-241.1
+[3.2.3-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.2.2-241.1...v3.2.3-241.1
+[3.2.2-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.2.1-241.1...v3.2.2-241.1
+[3.2.1-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.2.0-241.1...v3.2.1-241.1
+[3.2.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.1.1-241.1...v3.2.0-241.1
+[3.1.1-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.1.0-241.1...v3.1.1-241.1
+[3.1.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v3.0.0-241.1...v3.1.0-241.1
+[3.0.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.16.4-241.1...v3.0.0-241.1
+[2.16.4-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.16.3-241.1...v2.16.4-241.1
+[2.16.3-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.16.2-241.1...v2.16.3-241.1
+[2.16.2-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.16.1-241.1...v2.16.2-241.1
+[2.16.1-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.16.0-241.1...v2.16.1-241.1
+[2.16.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.15.2-241.1...v2.16.0-241.1
+[2.15.2-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.15.1-241.1...v2.15.2-241.1
+[2.15.1-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.15.0-241.1...v2.15.1-241.1
+[2.15.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.14.3-241.1...v2.15.0-241.1
+[2.14.3-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.14.2-241.1...v2.14.3-241.1
+[2.14.2-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.14.1-241.1...v2.14.2-241.1
+[2.14.1-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.14.0-241.1...v2.14.1-241.1
+[2.14.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.13.1-241.1...v2.14.0-241.1
+[2.13.1-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.13.0-241.1...v2.13.1-241.1
+[2.13.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.12.5-241.1...v2.13.0-241.1
+[2.12.5-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.12.4-241.1...v2.12.5-241.1
+[2.12.4-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.12.3-241.1...v2.12.4-241.1
+[2.12.3-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.12.2-241.1...v2.12.3-241.1
+[2.12.2-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.12.1-241.1...v2.12.2-241.1
+[2.12.1-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.12.0-241.1...v2.12.1-241.1
+[2.12.0-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.11.7-241.1...v2.12.0-241.1
+[2.11.7-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.11.6-241.1...v2.11.7-241.1
+[2.11.6-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.11.5-241.1...v2.11.6-241.1
+[2.11.5-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.11.4-241.1...v2.11.5-241.1
+[2.11.4-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.11.3-241.1...v2.11.4-241.1
+[2.11.3-241.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.11.2-223...v2.11.3-241.1
+[2.11.2-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.11.1-223...v2.11.2-223
+[2.11.1-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.11.0-223...v2.11.1-223
+[2.11.0-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.10.2-223...v2.11.0-223
+[2.10.2-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.10.1-223...v2.10.2-223
+[2.10.1-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.10.0-223...v2.10.1-223
+[2.10.0-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.9.0-223...v2.10.0-223
+[2.9.0-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.8.5-223...v2.9.0-223
+[2.8.5-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.8.4-223...v2.8.5-223
+[2.8.4-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.8.3-223...v2.8.4-223
+[2.8.3-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.8.2-233...v2.8.3-223
+[2.8.2-233]: https://github.com/carlrobertoh/ProxyAI/compare/v2.8.1-223...v2.8.2-233
 [2.8.2-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.1-223...v2.8.2-223
-[2.8.1-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.8.0-223...v2.8.1-223
-[2.8.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.7.1-223...v2.8.0-223
-[2.7.1-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.7.0-223...v2.7.1-223
-[2.7.0-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.3-223...v2.7.0-223
-[2.6.3-223]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.2-222...v2.6.3-223
-[2.6.2-222]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.1-222...v2.6.2-222
-[2.6.1-222]: https://github.com/carlrobertoh/CodeGPT/compare/v2.6.0-222...v2.6.1-222
-[2.6.0-222]: https://github.com/carlrobertoh/CodeGPT/compare/v2.5.1...v2.6.0-222
-[2.5.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.5.0...v2.5.1
-[2.5.0]: https://github.com/carlrobertoh/CodeGPT/compare/v2.4.0...v2.5.0
-[2.4.0]: https://github.com/carlrobertoh/CodeGPT/compare/v2.3.1...v2.4.0
-[2.3.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.3.0...v2.3.1
-[2.3.0]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.12...v2.3.0
-[2.2.12]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.11...v2.2.12
-[2.2.11]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.10...v2.2.11
-[2.2.10]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.9...v2.2.10
-[2.2.9]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.8...v2.2.9
-[2.2.8]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.7...v2.2.8
-[2.2.7]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.6...v2.2.7
-[2.2.6]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.5...v2.2.6
-[2.2.5]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.4...v2.2.5
-[2.2.4]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.3...v2.2.4
-[2.2.3]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.2...v2.2.3
-[2.2.2]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.1...v2.2.2
-[2.2.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.2.0...v2.2.1
-[2.2.0]: https://github.com/carlrobertoh/CodeGPT/compare/v2.1.7...v2.2.0
-[2.1.7]: https://github.com/carlrobertoh/CodeGPT/compare/v2.1.6...v2.1.7
-[2.1.6]: https://github.com/carlrobertoh/CodeGPT/compare/v2.1.5...v2.1.6
-[2.1.5]: https://github.com/carlrobertoh/CodeGPT/compare/v2.1.4...v2.1.5
-[2.1.4]: https://github.com/carlrobertoh/CodeGPT/compare/v2.1.3...v2.1.4
-[2.1.3]: https://github.com/carlrobertoh/CodeGPT/compare/v2.1.2...v2.1.3
-[2.1.2]: https://github.com/carlrobertoh/CodeGPT/compare/v2.1.1...v2.1.2
-[2.1.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.1.0...v2.1.1
-[2.1.0]: https://github.com/carlrobertoh/CodeGPT/compare/v2.0.6...v2.1.0
-[2.0.6]: https://github.com/carlrobertoh/CodeGPT/compare/v2.0.5...v2.0.6
-[2.0.5]: https://github.com/carlrobertoh/CodeGPT/compare/v2.0.4...v2.0.5
-[2.0.4]: https://github.com/carlrobertoh/CodeGPT/compare/v2.0.3...v2.0.4
-[2.0.3]: https://github.com/carlrobertoh/CodeGPT/compare/v2.0.2...v2.0.3
-[2.0.2]: https://github.com/carlrobertoh/CodeGPT/compare/v2.0.1...v2.0.2
-[2.0.1]: https://github.com/carlrobertoh/CodeGPT/compare/v2.0.0...v2.0.1
-[2.0.0]: https://github.com/carlrobertoh/CodeGPT/commits/v2.0.0
+[2.8.1-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.8.0-223...v2.8.1-223
+[2.8.0-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.7.1-223...v2.8.0-223
+[2.7.1-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.7.0-223...v2.7.1-223
+[2.7.0-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.6.3-223...v2.7.0-223
+[2.6.3-223]: https://github.com/carlrobertoh/ProxyAI/compare/v2.6.2-222...v2.6.3-223
+[2.6.2-222]: https://github.com/carlrobertoh/ProxyAI/compare/v2.6.1-222...v2.6.2-222
+[2.6.1-222]: https://github.com/carlrobertoh/ProxyAI/compare/v2.6.0-222...v2.6.1-222
+[2.6.0-222]: https://github.com/carlrobertoh/ProxyAI/compare/v2.5.1...v2.6.0-222
+[2.5.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.5.0...v2.5.1
+[2.5.0]: https://github.com/carlrobertoh/ProxyAI/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/carlrobertoh/ProxyAI/compare/v2.3.1...v2.4.0
+[2.3.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.12...v2.3.0
+[2.2.12]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.11...v2.2.12
+[2.2.11]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.10...v2.2.11
+[2.2.10]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.9...v2.2.10
+[2.2.9]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.8...v2.2.9
+[2.2.8]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.7...v2.2.8
+[2.2.7]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.6...v2.2.7
+[2.2.6]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.5...v2.2.6
+[2.2.5]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.4...v2.2.5
+[2.2.4]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.3...v2.2.4
+[2.2.3]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.2...v2.2.3
+[2.2.2]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.1...v2.2.2
+[2.2.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.2.0...v2.2.1
+[2.2.0]: https://github.com/carlrobertoh/ProxyAI/compare/v2.1.7...v2.2.0
+[2.1.7]: https://github.com/carlrobertoh/ProxyAI/compare/v2.1.6...v2.1.7
+[2.1.6]: https://github.com/carlrobertoh/ProxyAI/compare/v2.1.5...v2.1.6
+[2.1.5]: https://github.com/carlrobertoh/ProxyAI/compare/v2.1.4...v2.1.5
+[2.1.4]: https://github.com/carlrobertoh/ProxyAI/compare/v2.1.3...v2.1.4
+[2.1.3]: https://github.com/carlrobertoh/ProxyAI/compare/v2.1.2...v2.1.3
+[2.1.2]: https://github.com/carlrobertoh/ProxyAI/compare/v2.1.1...v2.1.2
+[2.1.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.1.0...v2.1.1
+[2.1.0]: https://github.com/carlrobertoh/ProxyAI/compare/v2.0.6...v2.1.0
+[2.0.6]: https://github.com/carlrobertoh/ProxyAI/compare/v2.0.5...v2.0.6
+[2.0.5]: https://github.com/carlrobertoh/ProxyAI/compare/v2.0.4...v2.0.5
+[2.0.4]: https://github.com/carlrobertoh/ProxyAI/compare/v2.0.3...v2.0.4
+[2.0.3]: https://github.com/carlrobertoh/ProxyAI/compare/v2.0.2...v2.0.3
+[2.0.2]: https://github.com/carlrobertoh/ProxyAI/compare/v2.0.1...v2.0.2
+[2.0.1]: https://github.com/carlrobertoh/ProxyAI/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/carlrobertoh/ProxyAI/commits/v2.0.0

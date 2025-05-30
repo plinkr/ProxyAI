@@ -11,7 +11,7 @@ import com.intellij.util.ui.components.BorderLayoutPanel
 import ee.carlrobert.codegpt.settings.Placeholder
 import ee.carlrobert.codegpt.settings.Placeholder.GIT_DIFF
 import ee.carlrobert.codegpt.settings.prompts.CommitMessageTemplate
-import ee.carlrobert.codegpt.settings.prompts.CoreActionsState.Companion.DEFAULT_CODE_ASSISTANT_PROMPT
+import ee.carlrobert.codegpt.settings.prompts.CoreActionsState.Companion.DEFAULT_AUTO_APPLY_PROMPT
 import ee.carlrobert.codegpt.settings.prompts.CoreActionsState.Companion.DEFAULT_EDIT_CODE_PROMPT
 import ee.carlrobert.codegpt.settings.prompts.CoreActionsState.Companion.DEFAULT_FIX_COMPILE_ERRORS_PROMPT
 import ee.carlrobert.codegpt.settings.prompts.CoreActionsState.Companion.DEFAULT_GENERATE_COMMIT_MESSAGE_PROMPT
@@ -30,24 +30,10 @@ class CoreActionsDetailsPanel : PromptDetailsPanel {
             override fun create(details: CoreActionPromptDetails): JComponent {
                 val editorPanel = when (details.code) {
 
-                    "CODE_ASSISTANT" -> CoreActionEditorPanel(
+                    "AUTO_APPLY" -> CoreActionEditorPanel(
                         details,
-                        DEFAULT_CODE_ASSISTANT_PROMPT,
-                        buildString {
-                            append("<p>Template for generating code assistant messages. Use the following placeholders to insert dynamic values:</p>\n")
-                            append(
-                                "<ul>${
-                                    listOf(
-                                        GIT_DIFF,
-                                        Placeholder.OPEN_FILES,
-                                        Placeholder.ACTIVE_CONVERSATION,
-                                    ).joinToString("\n") {
-                                        "<li><strong>${it.name}</strong>: ${it.description}</li>"
-                                    }
-                                }</ul>\n"
-                            )
-                        },
-                        listOf("{GIT_DIFF}", "{OPEN_FILES}", "{ACTIVE_CONVERSATION}")
+                        DEFAULT_AUTO_APPLY_PROMPT,
+                        "Template used for the 'Auto Apply' feature."
                     )
 
                     "EDIT_CODE" -> CoreActionEditorPanel(
@@ -91,7 +77,7 @@ class CoreActionsDetailsPanel : PromptDetailsPanel {
     init {
         val settings = service<PromptsSettings>().state.coreActions
         listOf(
-            settings.codeAssistant,
+            settings.autoApply,
             settings.editCode,
             settings.fixCompileErrors,
             settings.generateCommitMessage,

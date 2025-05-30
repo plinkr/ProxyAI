@@ -11,7 +11,7 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultBodyParams(
             mapOf(
                 "model" to "mistralai/Mixtral-8x7B-Instruct-v0.1",
-                "max_tokens" to 1024
+                "max_tokens" to 8192
             )
         )
     ),
@@ -26,7 +26,7 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultBodyParams(
             mapOf(
                 "model" to "meta-llama/Llama-2-70b-chat-hf",
-                "max_tokens" to 1024
+                "max_tokens" to 8192
             )
         )
     ),
@@ -35,8 +35,8 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultHeadersWithAuthentication(),
         getDefaultBodyParams(
             mapOf(
-                "model" to "accounts/fireworks/models/qwen2p5-coder-32b-instruct",
-                "max_tokens" to 1024
+                "model" to "accounts/fireworks/models/deepseek-r1-basic",
+                "max_tokens" to 8192
             )
         )
     ),
@@ -46,7 +46,7 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultBodyParams(
             mapOf(
                 "model" to "codellama-34b",
-                "max_tokens" to 1024
+                "max_tokens" to 8192
             )
         )
     ),
@@ -55,8 +55,8 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultHeaders("Authorization", "Bearer \$CUSTOM_SERVICE_API_KEY"),
         getDefaultBodyParams(
             mapOf(
-                "model" to "gpt-4",
-                "max_tokens" to 1024
+                "model" to "gpt-4.1",
+                "max_tokens" to 8192
             )
         )
     ),
@@ -66,7 +66,7 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultBodyParams(
             mapOf(
                 "model" to "codellama",
-                "max_tokens" to 1024
+                "max_tokens" to 8192
             )
         )
     ),
@@ -76,7 +76,7 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultBodyParams(
             mapOf(
                 "model" to "deepseek-ai/deepseek-coder-33b-instruct",
-                "max_tokens" to 1024
+                "max_tokens" to 8192
             )
         )
     ),
@@ -96,7 +96,7 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultBodyParams(
             mapOf(
                 "model" to "open-mistral-7b",
-                "max_tokens" to 1024
+                "max_tokens" to 8192
             )
         )
     ),
@@ -105,14 +105,14 @@ enum class CustomServiceChatCompletionTemplate(
         getDefaultHeaders(
             mapOf(
                 "Authorization" to "Bearer \$CUSTOM_SERVICE_API_KEY",
-                "HTTP-Referer" to "https://plugins.jetbrains.com/plugin/21056-codegpt",
-                "X-Title" to "CodeGPT"
+                "HTTP-Referer" to "https://tryproxy.io",
+                "X-Title" to "ProxyAI"
             )
         ),
         getDefaultBodyParams(
             mapOf(
                 "model" to "meta-llama/llama-3.1-8b-instruct:free",
-                "max_tokens" to 1024
+                "max_tokens" to 8192
             )
         )
     );
@@ -133,7 +133,7 @@ private fun getDefaultHeaders(key: String, value: String): MutableMap<String, St
 private fun getDefaultHeaders(additionalHeaders: Map<String, String>): MutableMap<String, String> {
     val defaultHeaders = mutableMapOf(
         "Content-Type" to "application/json",
-        "X-LLM-Application-Tag" to "codegpt"
+        "X-LLM-Application-Tag" to "proxyai"
     )
     defaultHeaders.putAll(additionalHeaders)
     return defaultHeaders

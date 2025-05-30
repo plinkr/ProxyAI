@@ -3,16 +3,14 @@ package ee.carlrobert.codegpt.completions;
 import static ee.carlrobert.codegpt.credentials.CredentialsStore.getCredential;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.util.net.ssl.CertificateManager;
 import ee.carlrobert.codegpt.credentials.CredentialsStore.CredentialKey;
 import ee.carlrobert.codegpt.settings.advanced.AdvancedSettings;
 import ee.carlrobert.codegpt.settings.service.anthropic.AnthropicSettings;
-import ee.carlrobert.codegpt.settings.service.azure.AzureSettings;
 import ee.carlrobert.codegpt.settings.service.llama.LlamaSettings;
 import ee.carlrobert.codegpt.settings.service.ollama.OllamaSettings;
 import ee.carlrobert.codegpt.settings.service.openai.OpenAISettings;
 import ee.carlrobert.llm.client.anthropic.ClaudeClient;
-import ee.carlrobert.llm.client.azure.AzureClient;
-import ee.carlrobert.llm.client.azure.AzureCompletionRequestParams;
 import ee.carlrobert.llm.client.codegpt.CodeGPTClient;
 import ee.carlrobert.llm.client.google.GoogleClient;
 import ee.carlrobert.llm.client.llama.LlamaClient;
@@ -21,6 +19,7 @@ import ee.carlrobert.llm.client.openai.OpenAIClient;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 
@@ -39,25 +38,12 @@ public class CompletionClientProvider {
   }
 
   public static ClaudeClient getClaudeClient() {
-    return new ClaudeClient(
-        getCredential(CredentialKey.AnthropicApiKey.INSTANCE),
-        AnthropicSettings.getCurrentState().getApiVersion(),
-        getDefaultClientBuilder());
-  }
-
-  public static AzureClient getAzureClient() {
-    var settings = AzureSettings.getCurrentState();
-    var params = new AzureCompletionRequestParams(
-        settings.getResourceName(),
-        settings.getDeploymentId(),
-        settings.getApiVersion());
-    var useAzureActiveDirectoryAuthentication = settings.isUseAzureActiveDirectoryAuthentication();
-    var credential = useAzureActiveDirectoryAuthentication
-        ? getCredential(CredentialKey.AzureActiveDirectoryToken.INSTANCE)
-        : getCredential(CredentialKey.AzureOpenaiApiKey.INSTANCE);
-    return new AzureClient.Builder(credential, params)
-        .setActiveDirectoryAuthentication(useAzureActiveDirectoryAuthentication)
-        .build(getDefaultClientBuilder());
+    var builder = new ClaudeClient.Builder(getCredential(CredentialKey.AnthropicApiKey.INSTANCE),
+        AnthropicSettings.getCurrentState().getApiVersion());
+    if (AnthropicSettings.getCurrentState().hasCustomBaseHost()) {
+      builder.setHost(AnthropicSettings.getCurrentState().getBaseHost());
+    }
+    return builder.build(getDefaultClientBuilder());
   }
 
   public static LlamaClient getLlamaClient() {
@@ -96,6 +82,9 @@ public class CompletionClientProvider {
 
   public static OkHttpClient.Builder getDefaultClientBuilder() {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
+    CertificateManager certificateManager = CertificateManager.getInstance();
+    X509TrustManager trustManager = certificateManager.getTrustManager();
+    builder.sslSocketFactory(certificateManager.getSslContext().getSocketFactory(), trustManager);
     var advancedSettings = AdvancedSettings.getCurrentState();
     var proxyHost = advancedSettings.getProxyHost();
     var proxyPort = advancedSettings.getProxyPort();

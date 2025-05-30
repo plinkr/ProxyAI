@@ -30,13 +30,16 @@ object GitUtil {
             ?: repositoryManager.repositories.firstOrNull()
     }
 
-    @JvmStatic
     fun getCurrentChanges(project: Project): String? {
         return getProjectRepository(project)?.let { repository ->
             try {
                 val repoRootPath = repository.root.toNioPath()
                 val changes = ChangeListManager.getInstance(project).allChanges
+                    .filter { change ->
+                        change.virtualFile?.let { !it.fileType.isBinary } ?: false
+                    }
                     .sortedBy { it.virtualFile?.timeStamp }
+
                 val patches = IdeaTextPatchBuilder.buildPatch(
                     project, changes, repoRootPath, false, true
                 )
@@ -89,6 +92,19 @@ object GitUtil {
     }
 
     @Throws(VcsException::class)
+    fun visitRepositoryCommits(
+        project: Project,
+        repository: GitRepository,
+        onVisit: (GitCommit) -> Unit
+    ) {
+        try {
+            GitHistoryUtils.loadDetails(project, repository.root, { onVisit(it) })
+        } catch (e: VcsException) {
+            logger.error("Error fetching commit history: {}", e.message)
+        }
+    }
+
+    @Throws(VcsException::class)
     fun getAllRecentCommits(
         project: Project,
         repository: GitRepository,
@@ -136,6 +152,7 @@ object GitUtil {
                         line.startsWith("---") ||
                         line.startsWith("+++") ||
                         line.startsWith("===") ||
+                        line.contains("\\ No newline at end of file")
                         (!showContext && line.startsWith(" "))
             }
             .joinToString("\n")

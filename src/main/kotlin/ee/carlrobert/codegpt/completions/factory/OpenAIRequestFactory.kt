@@ -1,18 +1,22 @@
 package ee.carlrobert.codegpt.completions.factory
 
 import com.intellij.openapi.components.service
+import com.intellij.openapi.vfs.readText
 import ee.carlrobert.codegpt.EncodingManager
 import ee.carlrobert.codegpt.ReferencedFile
 import ee.carlrobert.codegpt.completions.*
 import ee.carlrobert.codegpt.conversations.ConversationsState
+import ee.carlrobert.codegpt.psistructure.models.ClassStructure
 import ee.carlrobert.codegpt.settings.configuration.ConfigurationSettings
 import ee.carlrobert.codegpt.settings.configuration.ConfigurationSettings.Companion.getState
 import ee.carlrobert.codegpt.settings.prompts.CoreActionsState
 import ee.carlrobert.codegpt.settings.prompts.PromptsSettings
+import ee.carlrobert.codegpt.settings.prompts.addProjectPath
 import ee.carlrobert.codegpt.settings.service.openai.OpenAISettings
 import ee.carlrobert.codegpt.util.file.FileUtil.getImageMediaType
 import ee.carlrobert.llm.client.openai.completion.OpenAIChatCompletionModel.*
 import ee.carlrobert.llm.client.openai.completion.request.*
+import ee.carlrobert.llm.completion.CompletionRequest
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -45,6 +49,26 @@ class OpenAIRequestFactory : CompletionRequestFactory {
         val prompt = "Code to modify:\n${params.selectedText}\n\nInstructions: ${params.prompt}"
         val systemPrompt = service<PromptsSettings>().state.coreActions.editCode.instructions
             ?: CoreActionsState.DEFAULT_EDIT_CODE_PROMPT
+        if (isReasoningModel(model)) {
+            return buildBasicO1Request(model, prompt, systemPrompt, stream = true)
+        }
+        return createBasicCompletionRequest(systemPrompt, prompt, model, true)
+    }
+
+    override fun createAutoApplyRequest(params: AutoApplyParameters): CompletionRequest {
+        val model = service<OpenAISettings>().state.model
+        val systemPrompt = service<PromptsSettings>().state.coreActions.autoApply.instructions
+            ?: CoreActionsState.DEFAULT_AUTO_APPLY_PROMPT
+
+        val prompt = buildString {
+            append("Source:\n")
+            append("${CompletionRequestUtil.formatCode(params.source)}\n\n")
+            append("Destination:\n")
+            val destination = params.destination
+            append(
+                "${CompletionRequestUtil.formatCode(destination.readText(), destination.path)}\n"
+            )
+        }
         if (isReasoningModel(model)) {
             return buildBasicO1Request(model, prompt, systemPrompt, stream = true)
         }
@@ -110,12 +134,14 @@ class OpenAIRequestFactory : CompletionRequestFactory {
         fun buildOpenAIMessages(
             model: String?,
             callParameters: ChatCompletionParameters,
-            referencedFiles: List<ReferencedFile>? = null
+            referencedFiles: List<ReferencedFile>? = null,
+            psiStructure: Set<ClassStructure>? = null
         ): List<OpenAIChatCompletionMessage> {
             val messages = buildOpenAIChatMessages(
-                model,
-                callParameters,
-                referencedFiles ?: callParameters.referencedFiles
+                model = model,
+                callParameters = callParameters,
+                referencedFiles = referencedFiles ?: callParameters.referencedFiles,
+                psiStructure = psiStructure,
             )
 
             if (model == null) {
@@ -151,7 +177,8 @@ class OpenAIRequestFactory : CompletionRequestFactory {
         private fun buildOpenAIChatMessages(
             model: String?,
             callParameters: ChatCompletionParameters,
-            referencedFiles: List<ReferencedFile>? = null
+            referencedFiles: List<ReferencedFile>? = null,
+            psiStructure: Set<ClassStructure>? = null
         ): MutableList<OpenAIChatCompletionMessage> {
             val message = callParameters.message
             val messages = mutableListOf<OpenAIChatCompletionMessage>()
@@ -162,13 +189,16 @@ class OpenAIRequestFactory : CompletionRequestFactory {
                 val sessionPersonaDetails = callParameters.personaDetails
                 if (sessionPersonaDetails == null) {
                     messages.add(
-                        OpenAIChatCompletionStandardMessage(role, selectedPersona.instructions)
+                        OpenAIChatCompletionStandardMessage(
+                            role,
+                            selectedPersona.instructions?.addProjectPath()
+                        )
                     )
                 } else {
                     messages.add(
                         OpenAIChatCompletionStandardMessage(
                             role,
-                            sessionPersonaDetails.instructions
+                            sessionPersonaDetails.instructions.addProjectPath()
                         )
                     )
                 }
@@ -254,7 +284,8 @@ class OpenAIRequestFactory : CompletionRequestFactory {
                 } else {
                     CompletionRequestUtil.getPromptWithContext(
                         referencedFiles,
-                        message.prompt
+                        message.prompt,
+                        psiStructure
                     )
                 }
                 messages.add(OpenAIChatCompletionStandardMessage("user", prompt))

@@ -13,14 +13,14 @@ class CodeGPTServiceSettings :
 class CodeGPTServiceSettingsState : BaseState() {
     var chatCompletionSettings by property(CodeGPTServiceChatCompletionSettingsState())
     var codeCompletionSettings by property(CodeGPTServiceCodeCompletionSettingsState())
-    var codeAssistantEnabled by property(true)
+    var nextEditsEnabled by property(true)
 }
 
 class CodeGPTServiceChatCompletionSettingsState : BaseState() {
-    var model by string("gpt-4o-mini")
+    var model by string("gpt-4.1-mini")
 }
 
 class CodeGPTServiceCodeCompletionSettingsState : BaseState() {
     var codeCompletionsEnabled by property(true)
-    var model by string("codestral")
+    var model by string(CodeGPTAvailableModels.DEFAULT_CODE_MODEL.toString())
 }

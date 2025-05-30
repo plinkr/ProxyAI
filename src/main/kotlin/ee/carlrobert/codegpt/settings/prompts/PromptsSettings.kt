@@ -1,6 +1,8 @@
 package ee.carlrobert.codegpt.settings.prompts
 
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.*
+import com.intellij.openapi.project.guessProjectDir
 import ee.carlrobert.codegpt.actions.editor.EditorActionsUtil
 import ee.carlrobert.codegpt.settings.configuration.ConfigurationSettings
 import ee.carlrobert.codegpt.settings.persona.PersonaSettings
@@ -16,8 +18,21 @@ class PromptsSettings :
     companion object {
         @JvmStatic
         fun getSelectedPersonaSystemPrompt(): String {
-            return service<PromptsSettings>().state.personas.selectedPersona.instructions ?: ""
+            return (service<PromptsSettings>().state.personas.selectedPersona.instructions ?: "")
+                .addProjectPath()
         }
+    }
+
+    override fun initializeComponent() {
+        super.initializeComponent()
+
+        val selectedPersona = state.personas.selectedPersona
+        if (selectedPersona.id == 1L) {
+            state.personas.selectedPersona = PersonasState.DEFAULT_PERSONA
+        }
+        state.personas.prompts = state.personas.prompts.map {
+            if (it.id == 1L) PersonasState.DEFAULT_PERSONA else it 
+        }.toMutableList()
     }
 }
 
@@ -30,8 +45,8 @@ class PromptsSettingsState : BaseState() {
 class CoreActionsState : BaseState() {
 
     companion object {
-        val DEFAULT_CODE_ASSISTANT_PROMPT =
-            getResourceContent("/prompts/core/code-assistant.txt")
+        val DEFAULT_AUTO_APPLY_PROMPT =
+            getResourceContent("/prompts/core/auto-apply.txt")
         val DEFAULT_EDIT_CODE_PROMPT = getResourceContent("/prompts/core/edit-code.txt")
         val DEFAULT_GENERATE_COMMIT_MESSAGE_PROMPT =
             getResourceContent("/prompts/core/generate-commit-message.txt")
@@ -43,10 +58,10 @@ class CoreActionsState : BaseState() {
             getResourceContent("/prompts/core/review-changes.txt")
     }
 
-    var codeAssistant by property(CoreActionPromptDetailsState().apply {
-        name = "Code Assistant"
-        code = "CODE_ASSISTANT"
-        instructions = DEFAULT_CODE_ASSISTANT_PROMPT
+    var autoApply by property(CoreActionPromptDetailsState().apply {
+        name = "Auto Apply"
+        code = "AUTO_APPLY"
+        instructions = DEFAULT_AUTO_APPLY_PROMPT
     })
     var editCode by property(CoreActionPromptDetailsState().apply {
         name = "Edit Code"
@@ -80,8 +95,8 @@ class PersonasState : BaseState() {
     companion object {
         val DEFAULT_PERSONA_PROMPT = getResourceContent("/prompts/persona/default-persona.txt")
         val DEFAULT_PERSONA = PersonaPromptDetailsState().apply {
-            id = 1L
-            name = "CodeGPT Default"
+            id = 1L  
+            name = "Default Persona"
             instructions = DEFAULT_PERSONA_PROMPT
         }
     }
@@ -201,3 +216,9 @@ class PersonaPromptDetailsState : PromptDetailsState() {
 
 @JvmRecord
 data class PersonaDetails(val id: Long, val name: String, val instructions: String)
+
+fun String.addProjectPath(): String = replace(
+    "{{project_path}}",
+    ProjectUtil.getActiveProject()?.guessProjectDir()?.path
+        ?: "UNDEFINED"
+)

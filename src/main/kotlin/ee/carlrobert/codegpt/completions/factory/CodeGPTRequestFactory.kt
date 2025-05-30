@@ -2,16 +2,21 @@ package ee.carlrobert.codegpt.completions.factory
 
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.components.service
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import ee.carlrobert.codegpt.CodeGPTPlugin
 import ee.carlrobert.codegpt.completions.BaseRequestFactory
 import ee.carlrobert.codegpt.completions.ChatCompletionParameters
 import ee.carlrobert.codegpt.completions.factory.OpenAIRequestFactory.Companion.buildOpenAIMessages
+import ee.carlrobert.codegpt.psistructure.ClassStructureSerializer
 import ee.carlrobert.codegpt.settings.configuration.ConfigurationSettings
 import ee.carlrobert.codegpt.settings.service.codegpt.CodeGPTServiceSettings
+import ee.carlrobert.codegpt.util.file.FileUtil
 import ee.carlrobert.llm.client.codegpt.request.chat.*
 import ee.carlrobert.llm.client.openai.completion.request.OpenAIChatCompletionStandardMessage
 
-class CodeGPTRequestFactory : BaseRequestFactory() {
+class CodeGPTRequestFactory(private val classStructureSerializer: ClassStructureSerializer) :
+    BaseRequestFactory() {
 
     override fun createChatRequest(params: ChatCompletionParameters): ChatCompletionRequest {
         val model = service<CodeGPTServiceSettings>().state.chatCompletionSettings.model
@@ -28,7 +33,7 @@ class CodeGPTRequestFactory : BaseRequestFactory() {
                     )
                 )
 
-        if ("o3-mini" == model) {
+        if ("o4-mini" == model) {
             requestBuilder
                 .setMaxTokens(null)
                 .setTemperature(null)
@@ -42,17 +47,54 @@ class CodeGPTRequestFactory : BaseRequestFactory() {
             requestBuilder.setWebSearchIncluded(true)
         }
         params.message.documentationDetails?.let {
-            requestBuilder.setDocumentationDetails(
-                DocumentationDetails(it.name, it.url)
-            )
+            requestBuilder.setDocumentationDetails(DocumentationDetails(it.name, it.url))
         }
-        params.referencedFiles?.let {
-            requestBuilder.setContext(AdditionalRequestContext(it.map { file ->
-                ContextFile(file.fileName(), file.fileContent())
-            }))
+
+        val contextFiles = params.referencedFiles
+            ?.mapNotNull { file ->
+                LocalFileSystem.getInstance().findFileByPath(file.filePath)?.let {
+                    if (it.isDirectory) {
+                        val children = mutableListOf<ContextFile>()
+                        processFolder(it, children)
+                        children
+                    } else {
+                        listOf(ContextFile(file.fileName(), file.filePath(), file.fileContent()))
+                    }
+                }
+            }
+            ?.flatten()
+            .orEmpty()
+
+
+        val psiContext = params.psiStructure?.map { classStructure ->
+            ContextFile(
+                classStructure.virtualFile.name,
+                classStructure.virtualFile.path,
+                classStructureSerializer.serialize(classStructure)
+            )
+        }.orEmpty()
+
+        val contextFilesWithPsi = contextFiles + psiContext
+        if (contextFilesWithPsi.isNotEmpty()) {
+            requestBuilder.setContext(AdditionalRequestContext(contextFilesWithPsi))
         }
 
         return requestBuilder.build()
+    }
+
+    private fun processFolder(folder: VirtualFile, contextFiles: MutableList<ContextFile>) {
+        folder.children.forEach { child ->
+            when {
+                child.isDirectory -> processFolder(child, contextFiles)
+                else -> contextFiles.add(
+                    ContextFile(
+                        child.name,
+                        child.path,
+                        FileUtil.readContent(child)
+                    )
+                )
+            }
+        }
     }
 
     override fun createBasicCompletionRequest(
@@ -62,7 +104,7 @@ class CodeGPTRequestFactory : BaseRequestFactory() {
         stream: Boolean
     ): ChatCompletionRequest {
         val model = service<CodeGPTServiceSettings>().state.chatCompletionSettings.model
-        if (model == "o3-mini") {
+        if (model == "o4-mini") {
             return buildBasicO1Request(model, userPrompt, systemPrompt, maxTokens, stream = stream)
         }
 

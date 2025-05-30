@@ -34,10 +34,10 @@ import ee.carlrobert.codegpt.toolwindow.chat.ui.textarea.ModelComboBoxAction
 import ee.carlrobert.codegpt.toolwindow.chat.ui.textarea.TotalTokensPanel
 import ee.carlrobert.codegpt.ui.IconActionButton
 import ee.carlrobert.codegpt.ui.textarea.header.UserInputHeaderPanel
-import ee.carlrobert.codegpt.ui.textarea.header.tag.GitCommitTagDetails
-import ee.carlrobert.codegpt.ui.textarea.header.tag.SelectionTagDetails
-import ee.carlrobert.codegpt.ui.textarea.header.tag.TagDetails
-import ee.carlrobert.codegpt.ui.textarea.suggestion.SuggestionsPopupManager
+import ee.carlrobert.codegpt.ui.textarea.header.tag.*
+import ee.carlrobert.codegpt.ui.textarea.lookup.LookupActionItem
+import ee.carlrobert.codegpt.util.EditorUtil
+import ee.carlrobert.codegpt.util.coroutines.DisposableCoroutineScope
 import ee.carlrobert.llm.client.openai.completion.OpenAIChatCompletionModel
 import git4idea.GitCommit
 import java.awt.*
@@ -51,7 +51,8 @@ class UserInputPanel(
     private val conversation: Conversation,
     private val totalTokensPanel: TotalTokensPanel,
     parentDisposable: Disposable,
-    private val onSubmit: (String, List<TagDetails>) -> Unit,
+    private val tagManager: TagManager,
+    private val onSubmit: (String) -> Unit,
     private val onStop: () -> Unit
 ) : JPanel(BorderLayout()) {
 
@@ -59,11 +60,23 @@ class UserInputPanel(
         private const val CORNER_RADIUS = 16
     }
 
-    private val suggestionsPopupManager = SuggestionsPopupManager(project, this)
+    private val disposableCoroutineScope = DisposableCoroutineScope()
     private val promptTextField =
-        PromptTextField(project, suggestionsPopupManager, ::updateUserTokens, ::handleSubmit)
+        PromptTextField(
+            project,
+            tagManager,
+            ::updateUserTokens,
+            ::handleBackSpace,
+            ::handleLookupAdded,
+            ::handleSubmit
+        )
     private val userInputHeaderPanel =
-        UserInputHeaderPanel(project, suggestionsPopupManager, promptTextField)
+        UserInputHeaderPanel(
+            project,
+            tagManager,
+            totalTokensPanel,
+            promptTextField
+        )
     private val submitButton = IconActionButton(
         object : AnAction(
             CodeGPTBundle.get("smartTextPane.submitButton.title"),
@@ -71,7 +84,7 @@ class UserInputPanel(
             IconUtil.scale(Icons.Send, null, 0.85f)
         ) {
             override fun actionPerformed(e: AnActionEvent) {
-                handleSubmit(promptTextField.text, userInputHeaderPanel.getSelectedTags())
+                handleSubmit(promptTextField.text)
             }
         },
         "SUBMIT"
@@ -94,10 +107,22 @@ class UserInputPanel(
         get() = promptTextField.text
 
     init {
+        Disposer.register(parentDisposable, disposableCoroutineScope)
         background = service<EditorColorsManager>().globalScheme.defaultBackground
         add(userInputHeaderPanel, BorderLayout.NORTH)
         add(promptTextField, BorderLayout.CENTER)
         add(getFooter(), BorderLayout.SOUTH)
+
+        EditorUtil.getSelectedEditor(project)?.let { editor ->
+            if (EditorUtil.hasSelection(editor)) {
+                tagManager.addTag(
+                    EditorSelectionTagDetails(
+                        editor.virtualFile,
+                        editor.selectionModel
+                    )
+                )
+            }
+        }
 
         Disposer.register(parentDisposable, promptTextField)
     }
@@ -141,6 +166,10 @@ class UserInputPanel(
         if (text.isNotEmpty() && text.last() == '@') {
             promptTextField.text = text.substring(0, text.length - 1)
         }
+    }
+
+    fun includeFiles(referencedFiles: MutableList<VirtualFile>) {
+        referencedFiles.forEach { userInputHeaderPanel.addTag(FileTagDetails(it)) }
     }
 
     override fun requestFocus() {
@@ -187,18 +216,24 @@ class UserInputPanel(
     override fun getInsets(): Insets = JBUI.insets(4)
 
     private fun handleSubmit(text: String) {
-        handleSubmit(text, userInputHeaderPanel.getSelectedTags())
-    }
-
-    private fun handleSubmit(text: String, appliedTags: List<TagDetails> = emptyList()) {
         if (text.isNotEmpty() && submitButton.isEnabled) {
-            onSubmit(text, appliedTags)
+            onSubmit(text)
             promptTextField.clear()
         }
     }
 
     private fun updateUserTokens(text: String) {
         totalTokensPanel.updateUserPromptTokens(text)
+    }
+
+    private fun handleBackSpace() {
+        if (text.isEmpty()) {
+            userInputHeaderPanel.getLastTag()?.let { tagManager.remove(it) }
+        }
+    }
+
+    private fun handleLookupAdded(item: LookupActionItem) {
+        item.execute(project, this)
     }
 
     private fun getFooter(): JPanel {
@@ -242,16 +277,16 @@ class UserInputPanel(
         return when (service<GeneralSettings>().state.selectedService) {
             ServiceType.CUSTOM_OPENAI,
             ServiceType.ANTHROPIC,
-            ServiceType.AZURE,
+            ServiceType.GOOGLE,
             ServiceType.OLLAMA -> true
 
             ServiceType.CODEGPT -> {
                 listOf(
-                    "gpt-4o",
-                    "gpt-4o-mini",
-                    "gemini-pro-1.5",
-                    "claude-3-opus",
-                    "claude-3.5-sonnet"
+                    "gpt-4.1",
+                    "gpt-4.1-mini",
+                    "gemini-pro-2.5",
+                    "gemini-flash-2.5",
+                    "claude-4-sonnet"
                 ).contains(
                     service<CodeGPTServiceSettings>()
                         .state
